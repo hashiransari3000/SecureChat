@@ -29,5 +29,6 @@ Thumbs.db
 
 # Runtime data and uploads
 uploads/
+private_uploads/
 temp/
 tmp/
