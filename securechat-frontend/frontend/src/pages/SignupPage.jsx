@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleSignIn from '../components/GoogleSignIn';
 
 export default function SignupPage() {
   const { signup, loading, error } = useAuth();
@@ -54,6 +55,7 @@ export default function SignupPage() {
 
         {error && <div className="error-banner" role="alert">⚠ {error}</div>}
         <button type="submit" className="primary-button" disabled={loading || !passwordReady}>{loading ? 'Creating account…' : 'Create private account'}</button>
+        <GoogleSignIn onComplete={() => navigate('/')} />
         <p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p>
       </form>
     </main>

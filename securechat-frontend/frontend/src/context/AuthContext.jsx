@@ -65,6 +65,21 @@ export function AuthProvider({ children }) {
     } finally { setLoading(false); }
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential, username = '') => {
+    setLoading(true); setError(null);
+    try {
+      const { data } = await api.post('/auth/google', { credential, ...(username ? { username } : {}) });
+      localStorage.setItem('securechat_token', data.token);
+      sessionStorage.setItem('securechat_auth_notice', data.message || (data.isNewUser ? 'Welcome to SecureChat!' : 'Welcome back!'));
+      setToken(data.token); setUser(data.user); return { ok: true };
+    } catch (err) {
+      const data = err.response?.data;
+      if (data?.code === 'GOOGLE_USERNAME_REQUIRED') return { ok: false, needsUsername: true, profile: data.profile };
+      setError(data?.error || 'Google sign-in could not be completed.');
+      return { ok: false };
+    } finally { setLoading(false); }
+  }, []);
+
   const logout = useCallback(async () => {
     try { await api.post('/auth/logout'); } catch {}
     localStorage.removeItem('securechat_token');
@@ -75,7 +90,7 @@ export function AuthProvider({ children }) {
 
   return <AuthContext.Provider value={{
     user, token, loading, initializing, error,
-    signup, login, logout, refreshUser, replaceUser, setError,
+    signup, login, loginWithGoogle, logout, refreshUser, replaceUser, setError,
   }}>{children}</AuthContext.Provider>;
 }
 

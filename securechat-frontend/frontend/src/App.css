@@ -137,6 +137,14 @@ h3 { margin: 0; }
 .optional-tag { color: var(--text-muted); font-weight: 500; font-size: .76rem; }
 .forgot-link { align-self: flex-end; font-size: .8rem; text-decoration: none; font-weight: 700; margin-top: -6px; }
 .auth-switch { text-align: center; color: var(--text-muted); font-size: .86rem; margin: 2px 0 0; }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: .75rem; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.auth-divider span { white-space: nowrap; }
+.google-signin-wrap { min-height: 44px; width: 100%; display: flex; justify-content: center; overflow: hidden; }
+.google-signin-wrap > div, .google-signin-wrap iframe { max-width: 100% !important; }
+.google-privacy-note { margin: -7px 0 0; color: var(--text-muted); font-size: .72rem; line-height: 1.45; text-align: center; }
+.google-username-modal { width: min(500px, 100%); }
+.auth-welcome-toast { bottom: 26px; }
 .auth-loading, .page-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--primary); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -14,6 +14,7 @@ function SecureShell({ user, logout }) {
   const [showTour, setShowTour] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [authNotice, setAuthNotice] = useState(() => sessionStorage.getItem('securechat_auth_notice') || '');
   const userId = user?.id || user?._id;
   const textSize = settings?.textSize || 'medium';
   const highContrast = !!settings?.highContrast;
@@ -25,6 +26,12 @@ function SecureShell({ user, logout }) {
   const navigate = useNavigate();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!authNotice) return undefined;
+    sessionStorage.removeItem('securechat_auth_notice');
+    const timer = window.setTimeout(() => setAuthNotice(''), 3600);
+    return () => window.clearTimeout(timer);
+  }, [authNotice]);
   useEffect(() => {
     if (!userId) return;
     const key = `securechat_seen_tour_${userId}`;
@@ -117,6 +124,7 @@ function SecureShell({ user, logout }) {
       </main>
     </div>
     {showTour && <PrivacyTour onDone={dismissTour} />}
+    {authNotice && <div className="toast auth-welcome-toast" role="status" aria-live="polite">✓ {authNotice}</div>}
     {settings && userId && <AppLock userId={userId} timeout={settings.appLockTimeout} />}
     {confirmLogout && <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="logout-title"><div className="modal-card compact-card"><h2 id="logout-title">Log out of SecureChat?</h2><p>Your local encrypted-browser identity remains on this device so this browser can read messages again after you log back in.</p><div className="modal-actions"><button className="secondary-button" type="button" onClick={() => setConfirmLogout(false)}>Stay logged in</button><button className="danger-button" type="button" onClick={logout}>Log out</button></div></div></div>}
   </>;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleSignIn from '../components/GoogleSignIn';
 
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
@@ -53,6 +54,8 @@ export default function LoginPage() {
         <button type="submit" className="primary-button" disabled={loading}>
           {loading ? 'Logging in…' : 'Log in'}
         </button>
+
+        <GoogleSignIn onComplete={() => navigate('/')} />
 
         <p className="auth-switch">
           Don't have an account? <Link to="/signup">Sign up</Link>

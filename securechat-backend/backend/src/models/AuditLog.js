@@ -8,7 +8,7 @@ const auditLogSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     action: {
       type: String,
-      enum: ['data_exported', 'account_deleted', 'privacy_changed', 'login', 'signup'],
+      enum: ['data_exported', 'account_deleted', 'privacy_changed', 'login', 'signup', 'google_login', 'google_signup'],
       required: true,
     },
     detail: { type: mongoose.Schema.Types.Mixed, default: {} },

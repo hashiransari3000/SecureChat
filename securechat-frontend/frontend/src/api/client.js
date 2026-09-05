@@ -17,7 +17,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const isAuthAttempt = String(err.config?.url || '').startsWith('/auth/');
+    if (err.response?.status === 401 && !isAuthAttempt && localStorage.getItem('securechat_token')) {
       localStorage.removeItem('securechat_token');
       window.location.href = '/login';
     }

@@ -36,6 +36,7 @@ Discover user → Send introduction → Accept or decline → Secure chat → Pr
 ## Key Features
 
 - Dynamic username discovery with privacy-aware limited profiles
+- Google Sign-In with server-verified identity and a user-chosen public username
 - Consent-first chat requests with an introduction message
 - End-to-end encrypted chat status shown in context
 - Fixed chat header and composer with a scrollable message area
@@ -102,6 +103,8 @@ npm run dev
 
 The backend runs on `http://localhost:5000` by default.
 
+For Google Sign-In, set `GOOGLE_CLIENT_ID` in the backend `.env`. The included `.env.example` shows the required field.
+
 ### 2. Frontend
 
 Open a second terminal:
@@ -113,6 +116,8 @@ npm run dev
 ```
 
 Open `http://localhost:5173`.
+
+In Google Cloud Console, add `http://localhost:5173` under **Authorized JavaScript origins** for the Web client. For deployment, add the production frontend origin as well.
 
 > Never commit the `.env` file, private uploads, database credentials or real user data.
 
