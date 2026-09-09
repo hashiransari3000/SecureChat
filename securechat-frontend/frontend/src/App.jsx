@@ -1,25 +1,31 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import AppLayout from './components/AppLayout';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import ChatPage from './pages/ChatPage';
-import PrivacyDashboardPage from './pages/PrivacyDashboardPage';
-import ProfilePage from './pages/ProfilePage';
-import DataTransparencyPage from './pages/DataTransparencyPage';
-import DataControlPage from './pages/DataControlPage';
-import DesignEthicsPage from './pages/DesignEthicsPage';
-import NotFoundPage from './pages/NotFoundPage';
-import SettingsPage from './pages/SettingsPage';
-import HelpCenterPage from './pages/HelpCenterPage';
-import FeedbackPage from './pages/FeedbackPage';
-import AboutPage from './pages/AboutPage';
 import './App.css';
 
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const PrivacyDashboardPage = lazy(() => import('./pages/PrivacyDashboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const DataTransparencyPage = lazy(() => import('./pages/DataTransparencyPage'));
+const DataControlPage = lazy(() => import('./pages/DataControlPage'));
+const DesignEthicsPage = lazy(() => import('./pages/DesignEthicsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage'));
+const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+
+function RouteFallback() {
+  return <div className="page-loading" role="status" aria-live="polite"><span className="spinner" /> Loading…</div>;
+}
+
 export default function App() {
-  return <AuthProvider><BrowserRouter><Routes>
+  return <AuthProvider><BrowserRouter><Suspense fallback={<RouteFallback />}><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/signup" element={<SignupPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -37,5 +43,5 @@ export default function App() {
       <Route path="/about" element={<AboutPage />} />
     </Route>
     <Route path="*" element={<NotFoundPage />} />
-  </Routes></BrowserRouter></AuthProvider>;
+  </Routes></Suspense></BrowserRouter></AuthProvider>;
 }

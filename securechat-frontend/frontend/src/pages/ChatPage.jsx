@@ -209,7 +209,7 @@ function ConversationInfo({ active, myId, presence, onClose, onSearch, onEncrypt
 
 function EmptyChat({ onStart }) {
   return <div className="chat-empty">
-    <img className="empty-chat-logo" src="/securechat-logo-full.jpg" alt="SecureChat" />
+    <img className="empty-chat-logo" src="/securechat-logo-full.jpg" alt="SecureChat" loading="lazy" decoding="async" />
     <h2>Private by design, simple by interaction.</h2>
     <p>Select a conversation or type the start of a username. Suggestions stay limited and respect discoverability settings.</p>
     <div className="empty-chat-actions"><button className="primary-button" type="button" onClick={onStart}><MessageCirclePlus aria-hidden="true" />Start secure chat</button><Link className="secondary-button" to="/privacy"><ShieldCheck aria-hidden="true" />Review privacy</Link></div>

@@ -19,6 +19,20 @@ SecureChat demonstrates how privacy can be made understandable and controllable 
 
 > **Course focus:** This is primarily an HCI and data-ethics project. The implementation supports the interaction design and usability concepts being evaluated.
 
+## 🌐 Live Deployment
+
+This project is deployed on AWS (free tier) and can be opened directly in a browser:
+
+| Layer | URL |
+|---|---|
+| **Frontend** | https://d2bdhd1gcudfjg.cloudfront.net |
+| **Backend API + Socket.IO** | https://d3qye3r9n8r030.cloudfront.net |
+| **Database** | MongoDB 7.0 running locally on the EC2 instance |
+
+Architecture, setup commands and cost notes are documented in **[DEPLOYMENT.md](DEPLOYMENT.md)** — including the WebSocket/API CloudFront distribution, nginx proxy, PM2 lifecycle, and why this stack runs MongoDB 7.0 on Ubuntu 24.04.
+
+> ⚠️ Email/password sign-up works immediately. The **Continue with Google** button needs the frontend domain added to the OAuth client's *Authorized JavaScript origins* in Google Cloud Console (see DEPLOYMENT.md).
+
 ## Design Challenge
 
 Many digital products make privacy difficult to understand: settings are hidden, consent is unclear, and users cannot easily reverse decisions. SecureChat addresses this through three design goals:
@@ -137,6 +151,7 @@ In Google Cloud Console, add `http://localhost:5173` under **Authorized JavaScri
 - [Visual Presentation](SecureChat_HCI_Visual_Presentation.pptx)
 - [Implementation Guide](IMPLEMENTATION_GUIDE.md)
 - [Verification Report](VERIFICATION_REPORT.md)
+- [AWS Deployment Guide](DEPLOYMENT.md)
 
 ## Limitations
 
