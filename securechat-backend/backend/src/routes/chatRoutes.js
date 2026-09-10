@@ -28,5 +28,6 @@ router.post('/conversations/:conversationId/messages', messageController.sendMes
 router.patch('/messages/:id', messageController.editMessage);
 router.delete('/messages/:id', messageController.deleteMessage);
 router.post('/messages/:id/read', messageController.markRead);
+router.post('/messages/:id/reactions', messageController.toggleReaction);
 
 module.exports = router;

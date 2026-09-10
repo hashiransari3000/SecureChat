@@ -266,6 +266,45 @@ exports.markRead = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
+const REACTION_LIMIT = 128;
+const REACTION_LENGTH_MAX = 16;
+const INVALID_EMOJI = /[\u0000-\u001f\u007f]/;
+
+exports.toggleReaction = async (req, res, next) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message || message.deleted || (message.expiresAt && message.expiresAt <= new Date())) return res.status(404).json({ error: 'Message not found.' });
+    const conversation = await accessibleConversation(message.conversationId, req.userId, false);
+    if (!conversation) return res.status(403).json({ error: 'This message is not in an active conversation.' });
+    if (conversation.type === 'direct') {
+      const peerId = conversation.participantIds.find((id) => String(id) !== String(req.userId));
+      if (!peerId || await isBlockedEither(req.userId, peerId)) return res.status(403).json({ error: 'This conversation is restricted.' });
+    }
+
+    const emoji = String(req.body?.emoji || '').trim();
+    if (!emoji || emoji.length > REACTION_LENGTH_MAX || INVALID_EMOJI.test(emoji)) return res.status(400).json({ error: 'Invalid reaction.' });
+
+    const mine = String(req.userId);
+    const reactions = message.reactions || [];
+    const exists = reactions.some((r) => String(r.userId) === mine && r.emoji === emoji);
+    if (exists) {
+      message.reactions = reactions.filter((r) => !(String(r.userId) === mine && r.emoji === emoji));
+    } else {
+      if (reactions.length >= REACTION_LIMIT) return res.status(400).json({ error: "This message can't take more reactions right now." });
+      message.reactions = [...reactions, { userId: req.userId, emoji }];
+    }
+    await message.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      const payload = { conversationId: String(message.conversationId), messageId: String(message._id), reactions: message.reactions };
+      const pending = new Set((conversation.pendingParticipantIds || []).map(String));
+      for (const participantId of conversation.participantIds) if (!pending.has(String(participantId))) io.to(`user:${String(participantId)}`).emit('message:reactions', payload);
+    }
+    res.json({ ok: true, reactions: message.reactions });
+  } catch (e) { next(e); }
+};
+
 exports.accessibleConversation = accessibleConversation;
 exports.activeParticipantIds = activeParticipantIds;
 exports.expirationFor = expirationFor;

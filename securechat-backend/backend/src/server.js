@@ -34,9 +34,16 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   next();
 });
 app.use(rateLimit({ windowMs: 60_000, max: 180 }));
+
+// Auth endpoints get a much tighter per-path budget than the general 180/min
+// so credential guesses stay brutally slow even behind a shared NAT.
+const authRateLimit = rateLimit({ windowMs: 60_000, max: 12 });
+app.use('/auth', authRateLimit);
 
 // Profile photos are not public static files. They are served only through
 // the authenticated /users/:userId/avatar privacy check.

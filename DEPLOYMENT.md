@@ -154,6 +154,56 @@ https://d2bdhd1gcudfjg.cloudfront.net
 ```
 
 Email/password sign-up works without this step; the Google button does not.
+If the Google button still reports *"origin is not allowed"*, the exact origin
+above must be on **Authorized JavaScript origins** (not redirect URIs) for the
+**Web** client `432304486079-mdgpiraqhiciv9neskk5f34th6ib5ejl`; it can take a
+few minutes to propagate.
+
+## Android app (Android 10+)
+
+`securechat-android/` is a Capacitor 7 wrapper (`com.securechat.app`) that ships
+the built React app in a WebView.
+
+- **minSdk 29** (Android 10) is pinned in `securechat-android/android/variables.gradle`.
+- The WebView origin is `https://securechat.app` (`androidScheme: https`), so the
+  OAuth client also needs `https://securechat.app` in **Authorized JavaScript
+  origins** for Google Sign-In to work inside the app.
+- Debug builds are fine for side-loading. For a store build, add a release
+  signing config (keystore) and switch `./gradlew assembleDebug` →
+  `assembleRelease` in the workflow, then upload the AAB to Play.
+
+### CI
+
+`.github/workflows/android-build.yml` runs on push/PR to `main`:
+
+1. Install Node 22 → `npm ci` + `npm run build` in the frontend.
+2. `npm ci` + `npx cap sync android` to push the built assets into the app.
+3. JDK 21 (Capacitor 7 requirement) + Android SDK via `setup-android`.
+4. `./gradlew assembleDebug bundleDebug` → APK **and** AAB uploaded as the
+   `securechat-android` artifact.
+
+### Local build
+
+```bash
+cd securechat-frontend/frontend && npm ci && npm run build
+cd ../../securechat-android && npm ci && npx cap sync android
+cd android && ./gradlew assembleDebug
+```
+
+Needs JDK 21 (`JAVA_HOME`) and the Android SDK (set `ANDROID_HOME` or write
+`local.properties` with `sdk.dir`).
+
+## Backend hardening notes
+
+- Global rate limit: 180 requests/min per IP+path; auth endpoints are capped
+  tighter at 12/min per IP+path (brute-force damping).
+- Security headers set on every response and passed through CloudFront:
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+  `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`,
+  `X-Frame-Options: DENY`, `Strict-Transport-Security` (63 720 000s, preload).
+- `express.json` body limit 150 KB; CORS locked to the single frontend origin;
+  `x-powered-by` disabled; profile photos are served only through the
+  authenticated privacy-check route, never as public static files.
 
 ## SSH access when your IP changes
 

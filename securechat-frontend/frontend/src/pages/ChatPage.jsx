@@ -1,12 +1,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, FileText, Info, KeyRound, LockKeyhole, MessageCirclePlus, Mic, Monitor, MoreHorizontal, Paperclip, Play, Search, Send, ShieldCheck, Timer, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Info, KeyRound, LockKeyhole, MessageCirclePlus, Mic, Monitor, MoreHorizontal, Paperclip, Play, Search, Send, ShieldCheck, Smile, Timer, Trash2 } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/useSocket';
 import { usePrivacy } from '../context/PrivacyContext';
 import { useE2EE } from '../context/E2EEContext';
 import Avatar from '../components/Avatar';
+import EmojiMenu from '../components/EmojiMenu';
 
 const MODES = [['off', 'Off'], ['1h', '1 hour'], ['1d', '1 day'], ['7d', '7 days']];
 const USERNAME_PREFIX = /^[a-z0-9_]{2,30}$/i;
@@ -57,6 +58,16 @@ function contentPreview(content) {
   if (content.kind === 'voice') return '🎙 Voice note';
   if (content.kind === 'attachment') return `📎 ${content.attachment?.name || 'Attachment'}`;
   return String(content.text || 'Message').replace(/\s+/g, ' ').slice(0, 90);
+}
+function groupReactions(reactions, myId) {
+  const map = new Map();
+  for (const reaction of reactions || []) {
+    const entry = map.get(reaction.emoji) || { emoji: reaction.emoji, count: 0, mine: false };
+    entry.count += 1;
+    if (idOf(reaction.userId) === idOf(myId)) entry.mine = true;
+    map.set(reaction.emoji, entry);
+  }
+  return [...map.values()].sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || String(a.emoji).localeCompare(String(b.emoji)));
 }
 
 function ConfirmDialog({ title, children, confirmLabel, danger = false, onConfirm, onCancel }) {
@@ -260,6 +271,8 @@ export default function ChatPage() {
   const [showChatSearch, setShowChatSearch] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [reactingToId, setReactingToId] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -465,6 +478,7 @@ export default function ChatPage() {
       loadLists().catch(() => {});
     };
     const onDeleted = ({ messageId, conversationId }) => { if (idOf(conversationId) === idOf(activeIdRef.current)) setMessages((prev) => prev.filter((m) => idOf(m) !== idOf(messageId))); loadLists().catch(() => {}); };
+    const onReactions = ({ messageId, reactions }) => { setMessages((prev) => prev.map((m) => idOf(m) === idOf(messageId) ? { ...m, reactions } : m)); };
     const onAccountRemoved = ({ userId }) => { const current = conversationsRef.current.find((c) => idOf(c) === idOf(activeIdRef.current)); if (current?.type === 'direct' && idOf(peerFor(current, myId)) === idOf(userId)) setActiveId(null); loadLists().catch(() => {}); };
     const onCleared = ({ conversationId }) => {
       if (idOf(conversationId) === idOf(activeIdRef.current)) { setMessages([]); setEvents([]); setChatSearch(''); setShowChatSearch(false); }
@@ -480,7 +494,7 @@ export default function ChatPage() {
     socket.on('presence:state', onPresence); socket.on('presence:update', onPresence);
     socket.on('privacy:changed', onPrivacyChanged); socket.on('conversation:settings', onConversationEvent); socket.on('conversation:accepted', onConversationEvent);
     socket.on('conversation:request', onListChange); socket.on('conversation:request-removed', onListChange); socket.on('group:invite', onListChange); socket.on('group:membership', onConversationEvent);
-    socket.on('message:updated', onUpdated); socket.on('message:deleted', onDeleted); socket.on('profile:changed', onListChange); socket.on('block:changed', onListChange); socket.on('account:removed', onAccountRemoved);
+    socket.on('message:updated', onUpdated); socket.on('message:deleted', onDeleted); socket.on('message:reactions', onReactions); socket.on('profile:changed', onListChange); socket.on('block:changed', onListChange); socket.on('account:removed', onAccountRemoved);
     socket.on('conversation:cleared', onCleared);
     return () => {
       socket.off('connect', onConnect); socket.off('disconnect', onDisconnect); socket.off('connect_error', onConnectError);
@@ -488,7 +502,7 @@ export default function ChatPage() {
       socket.off('typing:start', onTypingStart); socket.off('typing:stop', onTypingStop); socket.off('presence:state', onPresence); socket.off('presence:update', onPresence);
       socket.off('privacy:changed', onPrivacyChanged); socket.off('conversation:settings', onConversationEvent); socket.off('conversation:accepted', onConversationEvent);
       socket.off('conversation:request', onListChange); socket.off('conversation:request-removed', onListChange); socket.off('group:invite', onListChange); socket.off('group:membership', onConversationEvent);
-      socket.off('message:updated', onUpdated); socket.off('message:deleted', onDeleted); socket.off('profile:changed', onListChange); socket.off('block:changed', onListChange); socket.off('account:removed', onAccountRemoved);
+      socket.off('message:updated', onUpdated); socket.off('message:deleted', onDeleted); socket.off('message:reactions', onReactions); socket.off('profile:changed', onListChange); socket.off('block:changed', onListChange); socket.off('account:removed', onAccountRemoved);
       socket.off('conversation:cleared', onCleared);
     };
   }, [socket, myId, loadLists, reloadActive, flash, markActiveRead, showBrowserNotification, hydrateOne]);
@@ -669,6 +683,14 @@ export default function ChatPage() {
     catch (e) { setError(e.response?.data?.error || 'Could not change message retention.'); }
   };
 
+  const toggleReaction = async (message, emoji) => {
+    if (!message || !emoji) return;
+    try {
+      const { data } = await api.post(`/messages/${idOf(message)}/reactions`, { emoji });
+      setMessages((prev) => prev.map((m) => idOf(m) === idOf(message) ? { ...m, reactions: data.reactions } : m));
+    } catch (e) { setError(e.response?.data?.error || 'Could not send that reaction.'); }
+  };
+  const insertEmoji = (emoji) => { setDraft((prev) => prev + emoji); setShowEmojiPicker(false); };
   const saveEdit = async (messageId) => {
     const text = editText.trim(); if (!text || !activeId) return;
     try {
@@ -825,6 +847,13 @@ export default function ChatPage() {
                 {isVoice && <div className="voice-bubble"><button className="voice-play" type="button" onClick={() => openEncryptedMedia(item, true)} aria-label="Decrypt voice note">{mediaUrl ? <Check aria-hidden="true" /> : <Play aria-hidden="true" />}</button><div className="voice-track"><span /><span /><span /><span /><span /><span /><span /><span /></div><small>{content.attachment?.durationSeconds ? `${content.attachment.durationSeconds}s` : 'Voice note'}</small>{mediaUrl && <audio className="voice-audio" controls src={mediaUrl} preload="metadata" />}</div>}
                 <div className="message-meta"><span>{timeLabel(item.sentAt)}{item.edited ? ' · edited' : ''}</span>{expiry && <span title={`Expires ${dateTimeLabel(item.expiresAt)}`}>⏱ {expiry}</span>}{status && <span className={`message-status ${status.className}`} title={status.label} aria-label={status.label}>{status.icon}</span>}</div>
               </div>
+              <div className="reaction-bar">
+                {(item.reactions?.length || 0) > 0 && <div className="reaction-set">{groupReactions(item.reactions, myId).map((group) => <button key={group.emoji} type="button" className={`reaction-chip ${group.mine ? 'mine' : ''}`} onClick={() => toggleReaction(item, group.emoji)} aria-pressed={group.mine} aria-label={`${group.emoji} ${group.count} reaction${group.count === 1 ? '' : 's'}${group.mine ? ' (yours) ' : ''}— toggle`} title="Click to toggle your reaction">{group.emoji}<span>{group.count}</span></button>)}</div>}
+                <span className={`reaction-toggle-wrap ${reactingToId === idOf(item) ? 'open' : ''}`}>
+                  <button type="button" className="reaction-toggle-button" aria-label="React to this message" aria-expanded={reactingToId === idOf(item)} onClick={() => setReactingToId(reactingToId === idOf(item) ? null : idOf(item))}><Smile aria-hidden="true" /></button>
+                  {reactingToId === idOf(item) && <EmojiMenu onPick={(emoji) => { toggleReaction(item, emoji); setReactingToId(null); }} onClose={() => setReactingToId(null)} label="React to this message" />}
+                </span>
+              </div>
               {mine && editingId !== idOf(item) && <div className="message-actions">{content?.kind === 'text' && !content?.legacy && <button onClick={() => { setEditingId(idOf(item)); setEditText(content.text || ''); }}>Edit</button>}<button onClick={() => setConfirmDeleteId(idOf(item))}>Delete</button></div>}
             </article></Fragment>;
           })}
@@ -844,6 +873,10 @@ export default function ChatPage() {
           <input ref={fileRef} className="sr-only" type="file" onChange={chooseAttachment} />
           <div className="composer-main">
             <button className="composer-icon-button" type="button" onClick={() => fileRef.current?.click()} disabled={!canSend || recording} title="Attach encrypted file" aria-label="Attach a file"><Paperclip aria-hidden="true" /></button>
+            <span className={`emoji-wrap ${showEmojiPicker ? 'open' : ''}`}>
+              <button className="composer-icon-button" type="button" onClick={() => setShowEmojiPicker((v) => !v)} disabled={!canSend || recording} aria-expanded={showEmojiPicker} title="Insert emoji" aria-label="Insert an emoji"><Smile aria-hidden="true" /></button>
+              {showEmojiPicker && canSend && <EmojiMenu onPick={insertEmoji} onClose={() => setShowEmojiPicker(false)} label="Insert emoji" />}
+            </span>
             <textarea rows={1} value={draft} onChange={(e) => handleTyping(e.target.value)} onBlur={() => window.setTimeout(stopTyping, 100)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} placeholder={active.messagingAvailable ? `Message ${active.type === 'group' ? active.name : other?.name || ''}` : 'Messaging unavailable'} disabled={!active.messagingAvailable || recording} maxLength={10000} aria-label="Message" />
             <button className={`composer-icon-button mic-button ${recording ? 'recording' : ''}`} type="button" onClick={recording ? stopRecording : requestRecording} disabled={!canSend && !recording} title="Record encrypted voice note" aria-label={recording ? 'Stop voice recording' : 'Record a voice note'}><Mic aria-hidden="true" /></button>
             <button className="primary-button send-button" disabled={!draft.trim() || !canSend || recording} aria-label="Send encrypted message"><Send aria-hidden="true" /><span>Send</span></button>

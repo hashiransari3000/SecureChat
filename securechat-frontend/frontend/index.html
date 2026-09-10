@@ -8,6 +8,23 @@
     <link rel="preconnect" href="https://d3qye3r9n8r030.cloudfront.net" crossorigin />
     <meta name="description" content="SecureChat — a privacy-by-design communication prototype focused on consent, transparency and data sovereignty." />
     <title>SecureChat</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('securechat_theme_opt');
+          if (!saved) saved = 'light';
+          var dark = saved === 'dark' || (saved === 'system' && !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          if (saved === 'system' && window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+              if (localStorage.getItem('securechat_theme_opt') === 'system') {
+                document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
+              }
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

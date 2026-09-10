@@ -62,6 +62,11 @@ Discover user → Send introduction → Accept or decline → Secure chat → Pr
 - Loading, empty, success and error feedback states
 - Private group creation with participant consent
 - Encrypted attachments and voice-message interaction
+- Emoji reactions on messages with live sync and a composer emoji picker
+- Typing indicators, presence dots and mutual read receipts
+- Edit and delete your own messages
+- Block/unblock contacts and custom disappearing-message windows
+- Profile photo upload with EXIF/GPS metadata stripping before encryption
 - Encrypted data export and deliberate account-data wipe
 - Help Center, feedback, About, Terms and Privacy information
 
@@ -96,6 +101,7 @@ The interface applies **Shneiderman's Eight Golden Rules**:
 |---|---|
 | Frontend | React, Vite, React Router, Socket.IO Client, Web Crypto APIs |
 | Backend | Node.js, Express, Socket.IO, MongoDB/Mongoose |
+| Android | Capacitor wrapper (`securechat-android/`), minSdk 29 · Android 10+, CI builds the APK/AAB |
 | Security support | Browser-side cryptography, encrypted attachment storage, JWT authentication |
 
 ## Run Locally
@@ -135,6 +141,21 @@ In Google Cloud Console, add `http://localhost:5173` under **Authorized JavaScri
 
 > Never commit the `.env` file, private uploads, database credentials or real user data.
 
+### 3. Android app (Android 10+)
+
+The mobile app is a Capacitor wrapper in `securechat-android/` that loads the built frontend in a WebView. Requires JDK 21 and the Android SDK (`ANDROID_HOME` or a `local.properties` `sdk.dir`).
+
+```bash
+cd securechat-frontend/frontend && npm ci && npm run build
+cd ../../securechat-android && npm ci && npx cap sync android
+cd android && ./gradlew assembleDebug
+# Output: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Push to GitHub and the `android-build.yml` workflow (see DEPLOYMENT.md) produces an APK + AAB artifact automatically.
+
+> ⚠️ **Google Sign-In on Android:** because the WebView uses the `https://securechat.app` origin, you must add `https://securechat.app` to the OAuth client's *Authorized JavaScript origins* for Google Sign-In to work inside the app.
+
 ## Suggested Demonstration
 
 1. Create two test accounts in separate browser profiles.
@@ -142,8 +163,9 @@ In Google Cloud Console, add `http://localhost:5173` under **Authorized JavaScri
 3. Send a consent-first request with an introduction.
 4. Accept or decline it from the second account.
 5. Demonstrate chat, attachments and privacy-aware status indicators.
-6. Change discoverability or accessibility settings.
-7. Show encrypted export and the confirmation required for data deletion.
+6. React to a message with an emoji and watch it sync on the second device.
+7. Change discoverability or accessibility settings.
+8. Show encrypted export and the confirmation required for data deletion.
 
 ## Project Documents
 

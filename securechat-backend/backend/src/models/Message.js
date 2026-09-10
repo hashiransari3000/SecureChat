@@ -16,6 +16,11 @@ const receiptSchema = new mongoose.Schema({
   readReceiptEligible: { type: Boolean, default: true },
 }, { _id: false });
 
+const reactionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  emoji: { type: String, required: true, trim: true, maxlength: 16 },
+}, { _id: false });
+
 const attachmentRefSchema = new mongoose.Schema({
   attachmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Attachment', required: true },
   encryptedSize: { type: Number, required: true, min: 1 },
@@ -46,6 +51,10 @@ const messageSchema = new mongoose.Schema(
     expiresAt: { type: Date, default: null },
     edited: { type: Boolean, default: false },
     deleted: { type: Boolean, default: false },
+
+    // Lightweight reactions. Treated as metadata (like read receipts): the
+    // content remains encrypted and reactions never touch the ciphertext.
+    reactions: { type: [reactionSchema], default: [] },
   },
   { timestamps: { createdAt: 'sentAt', updatedAt: true } }
 );

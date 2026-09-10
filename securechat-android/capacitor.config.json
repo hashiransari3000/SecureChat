@@ -1,0 +1,14 @@
+{
+  "appId": "com.securechat.app",
+  "appName": "SecureChat",
+  "webDir": "../securechat-frontend/frontend/dist",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "securechat.app"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "minSdkVersion": 29,
+    "gradleFuseVault2": false
+  }
+}

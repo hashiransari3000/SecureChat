@@ -1,0 +1,14 @@
+{
+  "name": "securechat-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SecureChat Android wrapper built with Capacitor (minSdk 29 for Android 10+)",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}

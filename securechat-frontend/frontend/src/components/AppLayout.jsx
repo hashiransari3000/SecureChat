@@ -56,6 +56,7 @@ function SecureShell({ user, logout }) {
     const applyTheme = () => {
       const nextTheme = theme === 'system' ? (query.matches ? 'dark' : 'light') : theme;
       if (root.dataset.theme !== nextTheme) root.dataset.theme = nextTheme;
+      try { localStorage.setItem('securechat_theme_opt', theme); } catch (e) { /* storage may be unavailable */ }
     };
     applyTheme();
     query.addEventListener?.('change', applyTheme);

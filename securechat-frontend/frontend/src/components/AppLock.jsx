@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { LockKeyhole } from 'lucide-react';
 
 const encoder = new TextEncoder();
 
@@ -101,7 +102,7 @@ export default function AppLock({ userId, timeout }) {
   if (!locked) return null;
   return <div className="modal-overlay lock-overlay" role="dialog" aria-modal="true" aria-labelledby="locked-title">
     <div className="modal-card compact-card">
-      <div className="lock-hero">🔒</div>
+      <div className="lock-hero"><LockKeyhole aria-hidden="true" /></div>
       <h2 id="locked-title">SecureChat is locked</h2>
       <p>Your inactivity timer expired. Messages remain unchanged; the interface is simply hidden until you unlock it.</p>
       <label>Local PIN<input className="lock-input" inputMode="numeric" autoComplete="off" type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))} onKeyDown={(e) => e.key === 'Enter' && unlock()} autoFocus placeholder="6–8 digit PIN" /></label>
