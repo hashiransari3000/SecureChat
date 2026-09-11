@@ -38,6 +38,8 @@ jobs:
         working-directory: securechat-frontend/frontend
         run: |
           npm ci
+          VITE_API_URL="https://d3qye3r9n8r030.cloudfront.net" \
+          VITE_GOOGLE_CLIENT_ID="432304486079-mdgpiraqhiciv9neskk5f34th6ib5ejl.apps.googleusercontent.com" \
           npm run build
 
       - name: Install Capacitor tooling
