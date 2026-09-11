@@ -27,13 +27,9 @@ export async function initializePushNotifications() {
   if (!isNativePlatform || pushReady) return;
   try {
     const PushNotifications = await loadPushNotifications();
-    const permission = await PushNotifications.requestPermissions();
-    if (permission?.receive !== 'granted') return;
 
-    await PushNotifications.register();
-    pushReady = true;
-
-    _pushListener = await PushNotifications.addListener('registration', ({ value }) => saveToken(value));
+    const regListener = await PushNotifications.addListener('registration', ({ value }) => saveToken(value));
+    _pushListener = regListener;
     await PushNotifications.addListener('registrationError', () => { /* FCM not configured yet */ });
     await PushNotifications.addListener('pushNotificationReceived', ({ notification }) => handleForegroundPush(notification));
     await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
@@ -41,5 +37,8 @@ export async function initializePushNotifications() {
       if (!conversationId) return;
       window.dispatchEvent(new CustomEvent('securechat:open-conversation', { detail: { conversationId } }));
     });
+
+    await PushNotifications.register();
+    pushReady = true;
   } catch { /* FCM may not be configured for this APK yet */ }
 }

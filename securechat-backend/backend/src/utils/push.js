@@ -9,7 +9,7 @@ let attempted = false;
 // the backend keeps running and push is simply skipped (socket delivery still
 // covers live clients).
 function initApp() {
-  if (attempted) return admin.apps.length ? true : false;
+  if (attempted) return admin.getApps ? admin.getApps().length > 0 : admin.apps.length > 0;
   attempted = true;
   const credentialsPath = process.env.FCM_SERVICE_ACCOUNT;
   if (!credentialsPath) {
@@ -17,7 +17,10 @@ function initApp() {
     return false;
   }
   try {
-    admin.initializeApp({ credential: admin.credential.cert(credentialsPath), projectId: process.env.FCM_PROJECT_ID || undefined });
+    // firebase-admin >= v12 exposes cert() at the top level; .credential was
+    // removed in v14. Use whichever the installed version provides.
+    const credential = admin.credential ? admin.credential.cert(credentialsPath) : admin.cert(credentialsPath);
+    admin.initializeApp({ credential, projectId: process.env.FCM_PROJECT_ID || undefined });
     console.log('[push] Firebase Cloud Messaging initialized.');
     return true;
   } catch (err) {
