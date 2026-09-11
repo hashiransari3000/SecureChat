@@ -106,10 +106,10 @@ export default function PrivacyDashboardPage() {
     </section>)}
 
     <section className="panel notification-card" id="notification-permission">
-      <div className="section-title"><div><h2>Browser notification permission</h2><p>SecureChat asks the browser only after a contextual explanation and your explicit action. In this web build, notifications work while the app tab is open.</p></div><span className={`status-pill ${settings.notificationsEnabled ? 'positive' : ''}`}>{settings.notificationsEnabled ? 'Enabled' : 'Off'}</span></div>
+      <div className="section-title"><div><h2>Notification permission</h2><p>SecureChat asks permission only after a contextual explanation and your explicit action. New messages in chats you are not currently reading show a system notification — on desktop and in the Android app, including while this window is in the background.</p></div><span className={`status-pill ${settings.notificationsEnabled ? 'positive' : ''}`}>{settings.notificationsEnabled ? 'Enabled' : 'Off'}</span></div>
       <div className="notification-preview"><span className="preview-label">Lock-screen preview</span><strong>SecureChat</strong><p>{notificationPreview}</p></div>
       <div className="action-row wrap">{!settings.notificationsEnabled ? <button className="primary-button" onClick={() => setShowNotificationsExplainer(true)}>Review before enabling</button> : <button className="secondary-button" onClick={() => update('notificationsEnabled', false)}>Turn app notifications off</button>}</div>
-      <p className="microcopy">Turning the app setting off does not alter your browser’s global permission. It simply tells SecureChat not to create notifications.</p>
+      <p className="microcopy">Turning the app setting off does not alter your device's global permission. It simply tells SecureChat not to create notifications.</p>
     </section>
 
     <section className="panel">

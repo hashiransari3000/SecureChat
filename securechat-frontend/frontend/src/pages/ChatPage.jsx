@@ -8,6 +8,8 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { useE2EE } from '../context/E2EEContext';
 import Avatar from '../components/Avatar';
 import EmojiMenu from '../components/EmojiMenu';
+import { isNativePlatform, onNotificationTap, showMessageNotification } from '../utils/notifications';
+import { initializePushNotifications } from '../utils/push';
 
 const MODES = [['off', 'Off'], ['1h', '1 hour'], ['1d', '1 day'], ['7d', '7 days']];
 const USERNAME_PREFIX = /^[a-z0-9_]{2,30}$/i;
@@ -404,19 +406,39 @@ export default function ChatPage() {
 
   const showBrowserNotification = useCallback(async (message) => {
     const current = settingsRef.current;
-    if (!current?.notificationsEnabled || document.visibilityState === 'visible' || !('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!current?.notificationsEnabled) return;
+    if (!isNativePlatform && !('Notification' in window)) return;
     const conversation = conversationsRef.current.find((c) => idOf(c) === idOf(message.conversationId));
+    const isOpenConversation = conversation && idOf(conversation) === idOf(activeIdRef.current);
+    if (isOpenConversation && (isNativePlatform || document.visibilityState === 'visible')) return;
     const sender = conversation?.participantIds?.find((p) => idOf(p) === idOf(message.senderId));
     const senderName = sender?.name || sender?.username || (conversation?.type === 'group' ? 'A group member' : 'Someone');
+    const title = conversation?.type === 'group' ? conversation.name || 'SecureChat group' : 'SecureChat';
     let body = 'New encrypted message received.';
     if (current.notificationPrivacyLevel === 'sender_only') body = `${senderName} sent a secure message.`;
     if (current.notificationPrivacyLevel === 'detailed') {
       const hydrated = await hydrateOne(message);
       body = `${senderName}: ${contentPreview(hydrated?._content).slice(0, 80)}`;
     }
-    const notification = new Notification(conversation?.type === 'group' ? conversation.name || 'SecureChat group' : 'SecureChat', { body, tag: `securechat-${idOf(message.conversationId)}` });
-    notification.onclick = () => { window.focus(); setActiveId(idOf(message.conversationId)); notification.close(); };
+    await showMessageNotification({ title, body, conversationId: idOf(message.conversationId) });
   }, [hydrateOne]);
+
+  useEffect(() => onNotificationTap((conversationId) => {
+    setActiveId(conversationId);
+    window.focus();
+  }), []);
+
+  useEffect(() => {
+    if (!isNativePlatform) return undefined;
+    initializePushNotifications().catch(() => {});
+    const openFromPush = (event) => { const { conversationId } = event?.detail || {}; if (conversationId) setActiveId(conversationId); };
+    window.addEventListener('securechat:open-conversation', openFromPush);
+    window.__securechatActiveConversationRef = { getCurrent: () => activeIdRef.current };
+    return () => {
+      window.removeEventListener('securechat:open-conversation', openFromPush);
+      delete window.__securechatActiveConversationRef;
+    };
+  }, []);
 
   useEffect(() => {
     if (!socket) return undefined;

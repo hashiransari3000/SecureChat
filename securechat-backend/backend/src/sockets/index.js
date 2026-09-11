@@ -4,6 +4,7 @@ const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const { createEncryptedMessage, recomputeAggregateReceipts } = require('../controllers/messageController');
 const { includesId } = require('../utils/privacy');
+const push = require('../utils/push');
 
 // One account may have several authenticated tabs/devices. Presence is online
 // while at least one socket is connected. No last-seen history is stored.
@@ -180,12 +181,23 @@ module.exports = function initSockets(io) {
         io.to(`user:${userId}`).emit('message:new', message.toObject());
         ack?.({ ok: true, message: message.toObject() });
 
+        const offlineRecipients = [];
         for (const recipientId of activeMembers(conversation).filter((x) => x !== userId)) {
           if (conversation.type === 'direct' && !await pairAllowsMessaging(userId, recipientId)) continue;
           if (isOnline(recipientId)) {
             await markReceiptDelivered(io, message, recipientId);
             io.to(`user:${recipientId}`).emit('message:new', message.toObject());
+          } else {
+            offlineRecipients.push(recipientId);
           }
+        }
+
+        // Best-effort FCM push for participants without a live socket.
+        if (offlineRecipients.length) {
+          try {
+            const senderName = await push.senderNameFor(userId);
+            await push.pushMessage({ conversation, message, senderName, recipientIds: offlineRecipients });
+          } catch (pushError) { console.error('[push] message push failed:', pushError.message); }
         }
       } catch (e) {
         console.error('message:send failed', e);

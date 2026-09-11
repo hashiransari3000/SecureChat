@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
+import { isNativePlatform, requestNotificationPermission } from '../utils/notifications';
 
 const EXAMPLES = {
   detailed: 'Ayesha: Are we still meeting at 4?',
@@ -16,26 +17,25 @@ export default function NotificationPermissionExplainer({ onClose }) {
   const enable = async () => {
     setBusy(true); setError('');
     try {
-      if (!('Notification' in window)) throw new Error('This browser does not support notifications.');
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
+      const granted = await requestNotificationPermission();
+      if (granted) {
         await updateField('notificationsEnabled', true);
         onClose?.(true);
       } else {
         await updateField('notificationsEnabled', false);
-        setError(permission === 'denied' ? 'Your browser blocked notifications. SecureChat will not keep prompting you; change the browser permission yourself if you want them later.' : 'No permission was granted. Messaging still works normally.');
+        setError(isNativePlatform ? 'Notifications are not allowed on this device. Turn them on in Android Settings → Apps → SecureChat → Notifications, then try again.' : 'No permission was granted. Messaging still works normally.');
       }
     } catch (e) { setError(e.response?.data?.error || e.message || 'Notifications could not be enabled.'); }
     finally { setBusy(false); }
   };
 
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div className="modal-card">
-    <span className="eyebrow">Contextual permission</span><h2 id="notification-title">Before your browser asks</h2>
-    <p>Notifications are optional. They help you notice new messages while this SecureChat web tab is open in the background; they are not required to send, receive or read chats.</p>
+    <span className="eyebrow">Contextual permission</span><h2 id="notification-title">Before your {isNativePlatform ? 'device' : 'browser'} asks</h2>
+    <p>Notifications are optional. SecureChat shows an alert when a new message arrives in a chat you are not already reading — on this screen even in the background — without interrupting your active conversation.</p>
     <div className="notification-preview"><span className="preview-label">Your current preview</span><strong>SecureChat</strong><p>{EXAMPLES[settings?.notificationPrivacyLevel || 'sender_only']}</p></div>
     <div className="privacy-explainer"><Eye aria-hidden="true" /><div><strong>Lock-screen privacy matters.</strong><p>Detailed notifications can expose names and message text to anyone who can see your screen. You can choose Sender Only or Anonymous in Privacy settings before enabling permission.</p></div></div>
-    <p className="microcopy">The native browser permission prompt appears only after you choose “Continue to browser permission”. If you decline, SecureChat does not repeatedly pressure you.</p>
+    <p className="microcopy">{isNativePlatform ? 'The Android permission prompt appears once, after you choose to continue. If you decline, SecureChat does not repeatedly pressure you.' : 'The native browser permission prompt appears only after you choose “Continue to browser permission”. If you decline, SecureChat does not repeatedly pressure you.'}</p>
     {error && <div className="error-banner" role="alert">⚠ {error}</div>}
-    <div className="modal-actions"><button className="secondary-button" onClick={() => onClose?.(false)} disabled={busy}>Not now</button><button className="primary-button" onClick={enable} disabled={busy}>{busy ? 'Waiting for browser…' : 'Continue to browser permission'}</button></div>
+    <div className="modal-actions"><button className="secondary-button" onClick={() => onClose?.(false)} disabled={busy}>Not now</button><button className="primary-button" onClick={enable} disabled={busy}>{busy ? 'Waiting for permission…' : 'Continue to permission'}</button></div>
   </div></div>;
 }

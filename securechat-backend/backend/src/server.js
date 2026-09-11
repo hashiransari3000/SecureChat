@@ -15,6 +15,7 @@ const userRoutes = require('./routes/userRoutes');
 const dataRoutes = require('./routes/dataRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 const { cleanupExpired } = require('./controllers/attachmentController');
 
 const app = express();
@@ -68,6 +69,7 @@ app.use('/users', userRoutes);
 app.use('/data', dataRoutes);
 app.use('/crypto', cryptoRoutes);
 app.use('/attachments', attachmentRoutes);
+app.use('/push', pushRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: req.originalUrl?.startsWith('/attachments') ? 'Encrypted attachments can be up to 25 MB.' : 'Profile photos can be up to 5 MB.' });
