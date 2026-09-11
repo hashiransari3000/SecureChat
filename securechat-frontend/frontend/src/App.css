@@ -144,6 +144,8 @@ h3 { margin: 0; }
 .auth-divider span { white-space: nowrap; }
 .google-signin-wrap { min-height: 44px; width: 100%; display: flex; justify-content: center; overflow: hidden; }
 .google-signin-wrap > div, .google-signin-wrap iframe { max-width: 100% !important; }
+.google-native-button { width: 100%; gap: 10px; }
+.google-native-icon { flex-shrink: 0; }
 .google-privacy-note { margin: -7px 0 0; color: var(--text-muted); font-size: .72rem; line-height: 1.45; text-align: center; }
 .google-username-modal { width: min(500px, 100%); }
 .auth-welcome-toast { bottom: 26px; }
