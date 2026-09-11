@@ -201,7 +201,8 @@ Needs JDK 21 (`JAVA_HOME`) and the Android SDK (set `ANDROID_HOME` or write
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
   `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`,
   `X-Frame-Options: DENY`, `Strict-Transport-Security` (63 720 000s, preload).
-- `express.json` body limit 150 KB; CORS locked to the single frontend origin;
+- `express.json` body limit 150 KB; CORS locked to an explicit allowlist
+  (website + Capacitor app origins, dev fallbacks);
   `x-powered-by` disabled; profile photos are served only through the
   authenticated privacy-check route, never as public static files.
 

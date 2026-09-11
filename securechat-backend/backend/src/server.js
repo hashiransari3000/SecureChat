@@ -20,13 +20,24 @@ const { cleanupExpired } = require('./controllers/attachmentController');
 const app = express();
 const server = http.createServer(app);
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = [
+  clientOrigin,
+  'https://localhost',          // Capacitor Android WebView (securechat.app origin)
+  'https://securechat.app',     // named-app WebView origin (Google Auth friendly)
+  'capacitor://localhost',      // Capacitor local scheme fallback
+  'http://localhost:5173',      // local dev server
+  'http://localhost:5000',      // local API fallback
+];
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
-const io = new Server(server, {
-  cors: { origin: clientOrigin, methods: ['GET', 'POST'] },
-});
+const io = new Server(server, { cors: corsOptions });
 app.set('io', io);
 
-app.use(cors({ origin: clientOrigin }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '150kb' }));
 app.disable('x-powered-by');
 app.use((req, res, next) => {
