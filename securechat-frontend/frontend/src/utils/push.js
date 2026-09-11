@@ -5,7 +5,7 @@ let pushReady = false;
 let _pushListener = null;
 
 function _dbg(stage, msg) {
-  try { fetch(`${import.meta.env.VITE_API_URL || ''}/push/debug?stage=${encodeURIComponent(stage)}&msg=${encodeURIComponent(msg || '')}`).catch(() => {}); } catch {}
+  try { fetch(`${import.meta.env.VITE_API_URL || ''}/push/debug?stage=${encodeURIComponent(stage)}&msg=${encodeURIComponent(msg || '')}&v=BN3`).catch(() => {}); } catch {}
 }
 
 async function loadPushNotifications() {
