@@ -7,7 +7,7 @@ here keeps monthly cost at **~$0** on the AWS Free Tier.
 
 | Layer | URL |
 |---|---|
-| Frontend (React SPA) | https://d2bdhd1gcudfjg.cloudfront.net |
+| Frontend (React SPA) | https://securechats.tech (CloudFront alias; raw dist @ https://d2bdhd1gcudfjg.cloudfront.net) |
 | Backend API + Socket.IO | https://d3qye3r9n8r030.cloudfront.net |
 | MongoDB | local `mongodb://127.0.0.1:27017/securechat` on the EC2 instance |
 
@@ -15,7 +15,7 @@ here keeps monthly cost at **~$0** on the AWS Free Tier.
 
 ```text
 Browser
-  └─ HTTPS https://d2bdhd1gcudfjg.cloudfront.net   (CloudFront distribution E24RD2PDWHVA73)
+  └─ HTTPS https://securechats.tech  (CNAME d2bdhd1gcudfjg.cloudfront.net · CloudFront E24RD2PDWHVA73 · ACM cert)
        ├─ S3 bucket  securechat-frontend-593521254468  (private, OAC)  → React/Vite build
        └─ SPA fallback: 403/404 → /index.html (HTTP 200)
 
@@ -150,7 +150,9 @@ Add the **frontend CloudFront URL** to the OAuth Web client
 **Authorized JavaScript origins**:
 
 ```
-https://d2bdhd1gcudfjg.cloudfront.net
+https://securechats.tech
+https://www.securechats.tech
+https://d2bdhd1gcudfjg.cloudfront.net   (raw dist fallback)
 ```
 
 Email/password sign-up works without this step; the Google button does not.

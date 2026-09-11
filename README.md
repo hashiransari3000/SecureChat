@@ -36,7 +36,7 @@ installed from the Android APK in the repository.
 
 | Layer | URL |
 |---|---|
-| **Web app** | https://d2bdhd1gcudfjg.cloudfront.net |
+| **Web app** | https://securechats.tech |
 | **API + Socket.IO** | https://d3qye3r9n8r030.cloudfront.net |
 | **Android APK** | [`SecureChat-v2.apk`](SecureChat-v2.apk) (Android 10+) |
 
