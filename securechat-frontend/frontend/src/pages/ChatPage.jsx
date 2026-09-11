@@ -137,7 +137,7 @@ function GroupComposer({ conversations, myId, onClose, onCreated }) {
     <form className="modal-card group-modal" onSubmit={submit}>
       <span className="eyebrow">Consent-aware group</span><h2 id="group-title">Create a private group</h2>
       <p className="muted">Only accepted connections can be invited. Invitees must accept before they start receiving group messages or seeing typing and delivery status.</p>
-      <label>Group name<input value={name} onChange={(e) => setName(e.target.value.slice(0, 60))} placeholder="HCI Project Team" maxLength={60} autoFocus /></label>
+      <label>Group name<input value={name} onChange={(e) => setName(e.target.value.slice(0, 60))} placeholder="Project Team" maxLength={60} autoFocus /></label>
       <fieldset className="member-picker"><legend>Invite connections</legend>
         {contacts.length === 0 ? <div className="empty-inline">Accept at least one direct chat before creating a group.</div> : contacts.map((person) => <label className="member-option" key={idOf(person)}><input type="checkbox" checked={selected.includes(idOf(person))} onChange={() => toggle(idOf(person))} /><Avatar user={person} size="xs" /><span><strong>{person.name || person.username}</strong><small>@{person.username}</small></span></label>)}
       </fieldset>
@@ -186,7 +186,7 @@ function EncryptionInfo({ active, myId, identity, onClose }) {
           {devices === null && <div className="empty-inline" role="status">Loading verification codes…</div>}
           {devices?.flatMap((entry) => (entry.devices || []).map((device) => ({ ...device, userId: entry.userId }))).filter((d) => !(d.userId === myId && d.deviceId === identity?.deviceId)).map((device) => <div className="device-row" key={`${device.userId}:${device.deviceId}`}><span><KeyRound aria-hidden="true" /></span><div><strong>{participantName(active, device.userId)} · registered browser</strong><small>{device.fingerprint}</small></div></div>)}
         </div>
-        <div className="technical-boundary"><strong>Technical boundary of this university build</strong><p>It uses AES-256-GCM with RSA-OAEP key wrapping. It does not implement Signal Protocol's Double Ratchet, sealed sender or forward secrecy, and it cannot protect against a malicious server replacing public keys.</p></div>
+        <div className="technical-boundary"><strong>Technical boundary of this build</strong><p>It uses AES-256-GCM with RSA-OAEP key wrapping. It does not implement Signal Protocol's Double Ratchet, sealed sender or forward secrecy, and it cannot protect against a malicious server replacing public keys.</p></div>
         {error && <div className="error-banner" role="alert">⚠ {error}</div>}
       </div>}
       <div className="modal-actions"><button className="primary-button" onClick={onClose}>Done</button></div>

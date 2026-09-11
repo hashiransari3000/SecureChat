@@ -109,7 +109,6 @@ function SecureShell({ user, logout }) {
               <NavLink role="menuitem" to="/help">Help center</NavLink>
               <NavLink role="menuitem" to="/feedback">Feedback / report a problem</NavLink>
               <NavLink role="menuitem" to="/about">About, terms & privacy</NavLink>
-              <NavLink role="menuitem" className="project-notes-link" to="/design-ethics">HCI design evidence</NavLink>
               <div className="menu-divider" />
               <button role="menuitem" className="danger-menu-item" type="button" onClick={() => { setMenuOpen(false); setConfirmLogout(true); }}>Log out</button>
             </div>}

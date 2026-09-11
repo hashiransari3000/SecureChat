@@ -19,7 +19,7 @@ export default function DataTransparencyPage() {
     <section className="panel truth-card">
       <div className="section-title"><div><h2>Encryption boundary</h2><p>SecureChat separates what is encrypted from the metadata the service still needs to operate.</p></div><span className="status-pill positive">Browser E2EE</span></div>
       <div className="info-banner"><strong>New message content and attachment bytes are end-to-end encrypted between registered SecureChat browsers.</strong><p>Each message uses a fresh AES-256-GCM key that is wrapped to participant devices with RSA-OAEP. Browser private keys are non-extractable and are never uploaded.</p></div>
-      <div className="warning-banner"><strong>This is not the Signal Protocol.</strong><p>This university implementation does not provide Double Ratchet forward secrecy, sealed sender, or protection from a malicious server substituting public keys. Conversation membership, group names, timestamps and delivery metadata remain visible to this server. Device fingerprints are shown in chat so users can compare keys out-of-band.</p></div>
+      <div className="warning-banner"><strong>This is not the Signal Protocol.</strong><p>This build does not provide Double Ratchet forward secrecy, sealed sender, or protection from a malicious server substituting public keys. Conversation membership, group names, timestamps and delivery metadata remain visible to this server. Device fingerprints are shown in chat so users can compare keys out-of-band.</p></div>
     </section>
 
     <section className="panel">

@@ -113,7 +113,7 @@ export default function PrivacyDashboardPage() {
     </section>
 
     <section className="panel">
-      <div className="section-title"><div><h2>Optional analytics</h2><p>This demo has no analytics collector wired in. The choice remains explicit so a future analytics feature cannot silently assume consent.</p></div><Toggle label="Optional analytics" checked={settings.analyticsAllowed} onChange={(value) => update('analyticsAllowed', value)} /></div>
+      <div className="section-title"><div><h2>Optional analytics</h2><p>This build has no analytics collector wired in. The choice remains explicit so a future analytics feature cannot silently assume consent.</p></div><Toggle label="Optional analytics" checked={settings.analyticsAllowed} onChange={(value) => update('analyticsAllowed', value)} /></div>
     </section>
 
     <section className="panel">

@@ -28,7 +28,7 @@ const privacySettingsSchema = new mongoose.Schema(
       default: 'off',
     },
 
-    // Explicit opt-in only; no analytics collector is enabled by this demo build.
+    // Explicit opt-in only; the default build has no analytics collector enabled
     analyticsAllowed: { type: Boolean, default: false },
 
     // Universal-design preferences.

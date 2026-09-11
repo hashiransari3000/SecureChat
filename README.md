@@ -3,147 +3,149 @@
 
   # SecureChat
 
-  **Privacy by design, simple by interaction.**
+  **Privacy-first, self-hostable messaging.**
 
-  An HCI-focused secure chat prototype exploring **Privacy and Data Ethics in UX Design**.
+  SecureChat is an open-source messaging platform engineered around consent-first
+  connections, end-to-end encryption, and privacy controls that are discoverable
+  instead of buried in a settings menu.
 
-  ![HCI](https://img.shields.io/badge/Focus-Human--Computer%20Interaction-1769e0)
-  ![Privacy](https://img.shields.io/badge/Design-Privacy%20by%20Design-20b8c7)
-  ![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-0d2948)
-  ![Node](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-1769e0)
+  [![License](https://img.shields.io/badge/License-MIT-1769e0)](#license)
+  [![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-0d2948)](#quickstart)
+  [![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-1769e0)](#quickstart)
+  [![Realtime](https://img.shields.io/badge/Realtime-Socket.IO-20b8c7)](#quickstart)
+  [![Android](https://img.shields.io/badge/Android-Capacitor%207%20%28API%2029%2B%29-1a9d49)](#android-app)
+  [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-181717)](#continuous-integration)
 </div>
 
-## Project Overview
+## Overview
 
-SecureChat demonstrates how privacy can be made understandable and controllable inside a messaging experience. Instead of exposing technical details at every step, the interface uses progressive disclosure, clear consent, informative feedback and reversible actions.
+Most messaging apps treat privacy as a paragraph in a policy page. SecureChat
+treats it as part of the product: every connection requires consent, message
+content is end-to-end encrypted in the browser before it leaves the device, and
+each privacy decision is explained in plain language at the moment it matters —
+with no dark patterns.
 
-> **Course focus:** This is primarily an HCI and data-ethics project. The implementation supports the interaction design and usability concepts being evaluated.
+The project is fully self-hostable: a web app (React/Vite), a Node.js and
+MongoDB backend with real-time Socket.IO messaging, and an Android wrapper
+built with Capacitor.
 
-## 🌐 Live Deployment
+## Live demo
 
-This project is deployed on AWS (free tier) and can be opened directly in a browser:
+The deployed build runs on AWS and can be opened directly in a browser, or
+installed from the Android APK in the repository.
 
 | Layer | URL |
 |---|---|
-| **Frontend** | https://d2bdhd1gcudfjg.cloudfront.net |
-| **Backend API + Socket.IO** | https://d3qye3r9n8r030.cloudfront.net |
-| **Database** | MongoDB 7.0 running locally on the EC2 instance |
+| **Web app** | https://d2bdhd1gcudfjg.cloudfront.net |
+| **API + Socket.IO** | https://d3qye3r9n8r030.cloudfront.net |
+| **Android APK** | [`SecureChat-v2.apk`](SecureChat-v2.apk) (Android 10+) |
 
-Architecture, setup commands and cost notes are documented in **[DEPLOYMENT.md](DEPLOYMENT.md)** — including the WebSocket/API CloudFront distribution, nginx proxy, PM2 lifecycle, and why this stack runs MongoDB 7.0 on Ubuntu 24.04.
+Deployment architecture, setup commands and cost notes are documented in
+**[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
-> ⚠️ Email/password sign-up works immediately. The **Continue with Google** button needs the frontend domain added to the OAuth client's *Authorized JavaScript origins* in Google Cloud Console (see DEPLOYMENT.md).
+> All data in the live demo is real — registrations use your actual email. For
+> evaluation, create a throwaway account.
 
-## Design Challenge
+## Features
 
-Many digital products make privacy difficult to understand: settings are hidden, consent is unclear, and users cannot easily reverse decisions. SecureChat addresses this through three design goals:
+- **Consent-first connections** — discovery is limited and identity stays
+  private until someone accepts your introduction request
+- **End-to-end encryption** — AES-256-GCM message keys wrapped per-device with
+  RSA-OAEP; browser private keys are non-extractable and never leave the device
+- **Live messaging** — Socket.IO delivers messages, typing indicators, presence
+  and read receipts in near real time
+- **Emoji reactions** — react to messages with live cross-device sync and an
+  in-composer emoji picker
+- **Private groups** — group creation with explicit member consent
+- **Encrypted attachments** — file and voice messages, encrypted before upload
+  with EXIF/GPS metadata stripped
+- **Privacy center** — discoverability, profile visibility, presence/typing
+  signals, read receipts, disappearing messages, block/clear controls
+- **Data sovereignty** — auditable data map, encrypted export, and
+  password-confirmed account-data deletion
+- **Accessibility** — responsive layouts, WCAG-contrast light/dark themes,
+  high-contrast mode, text-size scaling and reduced-motion support
+- **Google Sign-In** via server-verified OIDC (optional; see DEPLOYMENT.md)
+- **Android app** — Android 10+ (minSdk 29) Capacitor build with CI artifacts
 
-| Visible | Consensual | Reversible |
-|---|---|---|
-| Show privacy status at the relevant moment | Ask before creating a new connection | Provide clear cancel, decline, clear-chat and data-control actions |
+## Security & transparency
 
-## Main Interaction Flow
+SecureChat is engineered to be honest about what it protects:
 
-```text
-Discover user → Send introduction → Accept or decline → Secure chat → Privacy and data controls
-```
+- New message and attachment content is end-to-end encrypted; the server stores
+  ciphertext and per-device wrapped keys, never plaintext.
+- Operational metadata (membership, timestamps, delivery state) remains
+  server-visible by design and is disclosed in the app's data map.
+- The stack does **not** claim Signal Protocol–level guarantees: no Double
+  Ratchet forward secrecy, sealed sender, or protection against a malicious
+  server swapping public keys. These boundaries are stated in the app, not
+  hidden.
+- No analytics collector, no last-seen history, no server-held E2EE keys, no
+  public avatar URLs.
 
-## Key Features
+Details, including responsible-disclosure guidance, are in
+**[SECURITY](SECURITY.md)**.
 
-- Dynamic username discovery with privacy-aware limited profiles
-- Google Sign-In with server-verified identity and a user-chosen public username
-- Consent-first chat requests with an introduction message
-- End-to-end encrypted chat status shown in context
-- Fixed chat header and composer with a scrollable message area
-- Profile and account view inspired by familiar chat applications
-- Clear chat with confirmation and easy cancellation
-- Privacy controls for discoverability, identity and relationship signals
-- Notification and accessibility preferences
-- Reduced-motion support, high contrast and responsive layouts
-- Loading, empty, success and error feedback states
-- Private group creation with participant consent
-- Encrypted attachments and voice-message interaction
-- Emoji reactions on messages with live sync and a composer emoji picker
-- Typing indicators, presence dots and mutual read receipts
-- Edit and delete your own messages
-- Block/unblock contacts and custom disappearing-message windows
-- Profile photo upload with EXIF/GPS metadata stripping before encryption
-- Encrypted data export and deliberate account-data wipe
-- Help Center, feedback, About, Terms and Privacy information
-
-## HCI Foundation
-
-The interface applies **Shneiderman's Eight Golden Rules**:
-
-| Golden Rule | SecureChat Application |
-|---|---|
-| Consistency | Shared navigation, controls, spacing and visual language |
-| Shortcuts | Keyboard-friendly search, including `Ctrl + K` |
-| Informative feedback | Loading states, notifications, delivery status and confirmations |
-| Dialog closure | Clear completion after requests, messages and settings changes |
-| Error prevention | Confirmation before destructive or privacy-sensitive actions |
-| Easy reversal | Cancel, decline, back and clear-chat controls |
-| Internal locus of control | Users choose visibility, consent and data actions |
-| Reduce memory load | Explanations appear beside the decision they affect |
-
-## Privacy and Data Ethics
-
-- **Privacy by Design:** Privacy is part of the primary interaction flow.
-- **Data minimization:** Discovery is limited and unnecessary identity details remain hidden.
-- **Consent and transparency:** Consequences are explained before users act.
-- **Mutual privacy:** Presence, typing and read signals respect relationship choices.
-- **Progressive disclosure:** Reassurance is visible; advanced cryptographic details remain available on demand.
-- **User control:** Users can change settings, export data or initiate account-data deletion.
-- **Honest boundaries:** The interface distinguishes protected message content from operational metadata.
-
-## Technology Overview
+## Technology stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React, Vite, React Router, Socket.IO Client, Web Crypto APIs |
-| Backend | Node.js, Express, Socket.IO, MongoDB/Mongoose |
-| Android | Capacitor wrapper (`securechat-android/`), minSdk 29 · Android 10+, CI builds the APK/AAB |
-| Security support | Browser-side cryptography, encrypted attachment storage, JWT authentication |
+| Frontend | React, Vite, React Router, Socket.IO client, Web Crypto / IndexedDB |
+| Backend | Node.js, Express, Socket.IO, MongoDB / Mongoose |
+| Android | Capacitor 7 (`securechat-android/`), minSdk 29 · targetSdk 35 |
+| Infrastructure | AWS S3 + CloudFront, EC2 + nginx + PM2, managed by GitHub Actions |
 
-## Run Locally
+## Repository layout
+
+```
+securechat-backend/   Express + MongoDB + Socket.IO API
+securechat-frontend/  React + Vite web application
+securechat-android/   Capacitor Android wrapper
+.github/workflows/    CI (frontend build + Android APK/AAB artifacts)
+```
+
+## Quickstart
 
 ### Prerequisites
 
-- Node.js and npm
-- MongoDB running locally or a MongoDB connection string
-- A modern Chromium, Edge or Firefox browser
+- Node.js 20+ and npm
+- MongoDB 7 running locally (or a connection string in `.env`)
+- A modern Chromium/Edge/Firefox browser
 
 ### 1. Backend
 
-```powershell
+```bash
 cd securechat-backend/backend
-Copy-Item .env.example .env
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-The backend runs on `http://localhost:5000` by default.
-
-For Google Sign-In, set `GOOGLE_CLIENT_ID` in the backend `.env`. The included `.env.example` shows the required field.
+The API runs on `http://localhost:5000`. For Google Sign-In, add your
+`GOOGLE_CLIENT_ID` to `.env`.
 
 ### 2. Frontend
 
-Open a second terminal:
-
-```powershell
+```bash
 cd securechat-frontend/frontend
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173`. The frontend falls back to `localhost:5000` for
+the API when `VITE_API_URL` is not set. For production, bake in the API origin
+and Google client ID:
 
-In Google Cloud Console, add `http://localhost:5173` under **Authorized JavaScript origins** for the Web client. For deployment, add the production frontend origin as well.
+```bash
+VITE_API_URL="https://your-api.example.com" \
+VITE_GOOGLE_CLIENT_ID="your-client-id" \
+npm run build
+```
 
-> Never commit the `.env` file, private uploads, database credentials or real user data.
+### 3. Android app
 
-### 3. Android app (Android 10+)
-
-The mobile app is a Capacitor wrapper in `securechat-android/` that loads the built frontend in a WebView. Requires JDK 21 and the Android SDK (`ANDROID_HOME` or a `local.properties` `sdk.dir`).
+> Requires JDK 21 and the Android SDK (`ANDROID_HOME` or a `local.properties`
+> `sdk.dir`).
 
 ```bash
 cd securechat-frontend/frontend && npm ci && npm run build
@@ -152,46 +154,33 @@ cd android && ./gradlew assembleDebug
 # Output: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Push to GitHub and the `android-build.yml` workflow (see DEPLOYMENT.md) produces an APK + AAB artifact automatically.
+The Android WebView uses the `https://securechat.app` origin. For Google
+Sign-In inside the app, add that origin to the OAuth client's *Authorized
+JavaScript origins* (see DEPLOYMENT.md). For self-hosted deployments, update the
+backend CORS allowlist in `src/server.js` to include your app origin.
 
-> ⚠️ **Google Sign-In on Android:** because the WebView uses the `https://securechat.app` origin, you must add `https://securechat.app` to the OAuth client's *Authorized JavaScript origins* for Google Sign-In to work inside the app.
+> Never commit `.env`, private uploads, database credentials or real user data.
 
-## Suggested Demonstration
+## Continuous integration
 
-1. Create two test accounts in separate browser profiles.
-2. Search using the beginning of a username.
-3. Send a consent-first request with an introduction.
-4. Accept or decline it from the second account.
-5. Demonstrate chat, attachments and privacy-aware status indicators.
-6. React to a message with an emoji and watch it sync on the second device.
-7. Change discoverability or accessibility settings.
-8. Show encrypted export and the confirmation required for data deletion.
+The `android-build.yml` workflow builds the frontend with production env vars,
+syncs it into the Capacitor project and publishes APK + AAB artifacts on every
+push to `main`. The frontend and backend CI jobs run with Node 22; the Android
+toolchain uses JDK 21 and `android-actions/setup-android`.
 
-## Project Documents
+## Contributing
 
-- [HCI Project Report](SecureChat_HCI_Project_Report.docx)
-- [Visual Presentation](SecureChat_HCI_Visual_Presentation.pptx)
-- [Implementation Guide](IMPLEMENTATION_GUIDE.md)
-- [Verification Report](VERIFICATION_REPORT.md)
-- [AWS Deployment Guide](DEPLOYMENT.md)
+Contributions are welcome. Please open an issue first for substantial changes,
+keep PRs focused, and do not commit secrets or real user data. Every change
+should preserve the project's privacy-by-default behavior.
 
-## Limitations
+## License
 
-- The project is an academic prototype, not a production-audited messenger.
-- Formal usability testing with a larger and more diverse participant sample remains future work.
-- Production deployment would require security review, infrastructure hardening, monitoring and recovery planning.
-
-## Academic Information
-
-| | |
-|---|---|
-| **Student** | Vishaka Bharwanu — 69518 |
-| **Course** | Human–Computer Interaction & Graphics |
-| **Instructor** | Dr. Rizwan Munir |
-| **Topic** | Privacy and Data Ethics in UX Design |
+Released under the [MIT License](LICENSE). Third-party libraries retain their
+own licenses.
 
 ---
 
 <div align="center">
-  <strong>A secure experience is usable only when people understand it.</strong>
+  <strong>A secure experience is only secure when people understand it.</strong>
 </div>

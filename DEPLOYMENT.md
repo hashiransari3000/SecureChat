@@ -27,7 +27,7 @@ Browser → wss/https https://d3qye3r9n8r030.cloudfront.net   (CloudFront dist E
 
 - Region: `ap-south-1` (AWS CLI binaries under `~/awscli`).
 - WAF remains configured on the separate **Al-Kausar** distribution only; this
-  prototype uses CloudFront's default protections.
+  deployment uses CloudFront's default protections.
 - A `MonthlyFreeTierGuard` budget alert (~$1, actual spend) emails the account
   owner if costs rise.
 
@@ -220,4 +220,4 @@ aws ec2 authorize-security-group-ingress --group-id sg-0643e5b5769cb2a9e \
 
 - EC2 `t3.micro`, S3, CloudFront, and MongoDB-on-EC2 → free tier.
 - Budget alarm `MonthlyFreeTierGuard` (actual > $1) alerts to the owner email.
-- If a non-free EC2 is ever used, stop it when not demoing.
+- If a non-free EC2 is ever used, stop it when not in use.

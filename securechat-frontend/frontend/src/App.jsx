@@ -13,7 +13,6 @@ const PrivacyDashboardPage = lazy(() => import('./pages/PrivacyDashboardPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const DataTransparencyPage = lazy(() => import('./pages/DataTransparencyPage'));
 const DataControlPage = lazy(() => import('./pages/DataControlPage'));
-const DesignEthicsPage = lazy(() => import('./pages/DesignEthicsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage'));
@@ -36,7 +35,6 @@ export default function App() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/your-data" element={<DataTransparencyPage />} />
       <Route path="/data-control" element={<DataControlPage />} />
-      <Route path="/design-ethics" element={<DesignEthicsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/help" element={<HelpCenterPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
