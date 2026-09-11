@@ -23,6 +23,8 @@ const server = http.createServer(app);
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 const allowedOrigins = [
   clientOrigin,
+  'https://securechats.tech',     // custom domain (apex)
+  'https://www.securechats.tech', // custom domain (www)
   'https://localhost',          // Capacitor Android WebView (securechat.app origin)
   'https://securechat.app',     // named-app WebView origin (Google Auth friendly)
   'capacitor://localhost',      // Capacitor local scheme fallback
