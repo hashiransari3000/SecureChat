@@ -21,7 +21,7 @@ async function loadPushNotifications() {
 }
 
 async function saveToken(token) {
-  _dbg('token-received', String(token).slice(0, 20) + '...');
+  _dbg('token-received', String(token).slice(0, 25));
   try {
     await api.post('/push/token', { token, platform: 'android' });
     _dbg('token-saved');
@@ -33,7 +33,7 @@ async function saveToken(token) {
 async function handleForegroundPush(notification) {
   const conversationId = String(notification?.data?.conversationId || '');
   const shouldSock = window.__securechatActiveConversationRef?.getCurrent?.() === conversationId;
-  if (shouldSock) return;
+  if (shouldSock) return; // user is reading that chat; socket handles inline append
   const title = String(notification.title || notification?.data?.title || 'SecureChat');
   const body = String(notification.body || notification?.data?.body || 'New encrypted message received.');
   if (conversationId) await showMessageNotification({ title, body, conversationId });
@@ -46,8 +46,16 @@ export async function initializePushNotifications() {
     const PushNotifications = await loadPushNotifications();
     _dbg('plugin-loaded');
 
+    let permission = null;
+    try {
+      permission = await PushNotifications.requestPermissions();
+      _dbg('permission-result', JSON.stringify(permission));
+    } catch (e) {
+      _dbg('permission-error', String(e));
+    }
+
     const regListener = await PushNotifications.addListener('registration', ({ value }) => {
-      _dbg('event-registration', String(value).slice(0, 20));
+      _dbg('event-registration', String(value).slice(0, 25));
       saveToken(value);
     });
     _pushListener = regListener;
