@@ -1,9 +1,11 @@
 const admin = require('firebase-admin');
+const { getMessaging } = require('firebase-admin/messaging');
 const PushToken = require('../models/PushToken');
 const PrivacySettings = require('../models/PrivacySettings');
 const User = require('../models/User');
 
 let attempted = false;
+let _app = null;
 
 // Initializes lazily and never throws. If the service-account JSON is missing
 // the backend keeps running and push is simply skipped (socket delivery still
@@ -20,7 +22,7 @@ function initApp() {
     // firebase-admin >= v12 exposes cert() at the top level; .credential was
     // removed in v14. Use whichever the installed version provides.
     const credential = admin.credential ? admin.credential.cert(credentialsPath) : admin.cert(credentialsPath);
-    admin.initializeApp({ credential, projectId: process.env.FCM_PROJECT_ID || undefined });
+    _app = admin.initializeApp({ credential, projectId: process.env.FCM_PROJECT_ID || undefined });
     console.log('[push] Firebase Cloud Messaging initialized.');
     return true;
   } catch (err) {
@@ -41,7 +43,7 @@ function bodyFor(level, senderName) {
 async function pushMessage({ conversation, message, senderName, recipientIds }) {
   if (!message || !conversation || !Array.isArray(recipientIds) || !recipientIds.length) return;
   if (!initApp()) return;
-  const messaging = admin.messaging();
+  const messaging = getMessaging(_app);
   try {
     const [tokens, privacy] = await Promise.all([
       PushToken.find({ userId: { $in: recipientIds } }).lean(),
