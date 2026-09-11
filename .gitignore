@@ -32,3 +32,8 @@ uploads/
 private_uploads/
 temp/
 tmp/
+firebase-service-account.json
+
+# Firebase config (contains API keys)
+google-services.json
+firebase-service-account.json
