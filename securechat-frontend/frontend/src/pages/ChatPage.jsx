@@ -376,8 +376,7 @@ export default function ChatPage() {
     if (!activeId) { setMessages([]); setEvents([]); setTypingUsers([]); setPresence('checking'); setChatMenuOpen(false); setShowChatSearch(false); return undefined; }
     setError(''); setMessages([]); setEvents([]); setChatSearch(''); setEditingId(null); setStagedFile(null); setStagedFileInfo(null);
     if (voicePreviewUrlRef.current) { URL.revokeObjectURL(voicePreviewUrlRef.current); voicePreviewUrlRef.current = ''; setVoicePreviewUrl(''); }
-    const conversation = conversations.find((c) => idOf(c) === idOf(activeId));
-    setChatMode(conversation?.disappearingMode || 'off');
+    setChatMode(conversationsRef.current.find((c) => idOf(c) === idOf(activeId))?.disappearingMode || 'off');
     if (cryptoStatus === 'ready') { setThreadLoading(true); reloadActive(activeId).catch(() => setError('Could not load this conversation.')).finally(() => setThreadLoading(false)); }
     socket?.emit('conversation:join', activeId, (result) => { if (!result?.ok) setError('This conversation is not available on the live connection.'); });
     socket?.emit('presence:query', { conversationId: activeId });
@@ -386,7 +385,7 @@ export default function ChatPage() {
       if (typingSent.current && socket) socket.emit('typing:stop', { conversationId: activeId });
       typingSent.current = false;
     };
-  }, [activeId, conversations, reloadActive, socket, cryptoStatus]);
+  }, [activeId, reloadActive, socket, cryptoStatus]);
 
   const markActiveRead = useCallback(() => {
     const conversationId = activeIdRef.current;
