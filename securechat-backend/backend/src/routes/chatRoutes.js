@@ -25,6 +25,7 @@ router.post('/groups/:conversationId/leave', conversationController.leaveGroup);
 
 router.get('/conversations/:conversationId/messages', messageController.getMessages);
 router.post('/conversations/:conversationId/messages', messageController.sendMessage);
+router.get('/messages/:messageId', messageController.getMessageById);
 router.patch('/messages/:id', messageController.editMessage);
 router.delete('/messages/:id', messageController.deleteMessage);
 router.post('/messages/:id/read', messageController.markRead);

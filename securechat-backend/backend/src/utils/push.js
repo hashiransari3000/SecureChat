@@ -71,9 +71,19 @@ async function pushMessage({ conversation, message, senderName, recipientIds }) 
       for (const row of rows) {
         messages.push({
           token: row.token,
-          notification: { title, body },
-          android: { channelId: 'messages', priority: 'high', notificationChannelId: 'messages' },
-          data: { conversationId: String(conversation._id), kind: 'message' },
+          notification: { title: title ?? 'SecureChat', body },
+          android: {
+            priority: 'high',
+            notification: { channelId: 'messages', title: title ?? 'SecureChat', body },
+          },
+          data: {
+            conversationId: String(conversation._id),
+            kind: 'message',
+            messageId: String(message._id || ''),
+            senderId: String(message.senderId || ''),
+            senderName: String(senderName || ''),
+            conversationType: String(conversation.type || 'direct'),
+          },
         });
       }
     }
@@ -83,10 +93,19 @@ async function pushMessage({ conversation, message, senderName, recipientIds }) 
     for (let i = 0; i < messages.length; i += chunk) {
       const batch = messages.slice(i, i + chunk);
       const result = await messaging.sendEach(batch);
-      const failures = result.responses.map((r, idx) => r.success ? null : batch[idx].token).filter(Boolean);
-      if (failures.length) {
-        await PushToken.deleteMany({ token: { $in: failures } });
-        console.error(`[push] ${failures.length} token(s) rejected and removed.`);
+      const dead = [];
+      for (const r of result.responses) {
+        if (r.success) continue;
+        const code = r.error?.errorInfo?.code || r.error?.code || 'UNKNOWN';
+        const token = batch[result.responses.indexOf(r)].token;
+        if (['UNREGISTERED', 'NOT_FOUND', 'SENDER_ID_MISMATCH', 'INVALID_ARGUMENT'].includes(code)) {
+          dead.push(token);
+        }
+        console.error(`[push] FCM ${code} for token ${String(token).slice(0, 12)}…`);
+      }
+      if (dead.length) {
+        await PushToken.deleteMany({ token: { $in: dead } });
+        console.error(`[push] ${dead.length} dead token(s) removed.`);
       }
     }
   } catch (err) {

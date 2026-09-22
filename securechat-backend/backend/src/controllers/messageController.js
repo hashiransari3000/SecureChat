@@ -171,6 +171,18 @@ exports.getMessages = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
+exports.getMessageById = async (req, res, next) => {
+  try {
+    const message = await Message.findById(req.params.messageId);
+    if (!message || message.deleted || (message.expiresAt && message.expiresAt <= new Date())) return res.status(404).json({ error: 'Message not found.' });
+    const conversation = await accessibleConversation(message.conversationId, req.userId, false);
+    if (!conversation) return res.status(403).json({ error: 'This message is not available in an accepted conversation.' });
+    const clearedAt = clearedAtFor(conversation, req.userId);
+    if (clearedAt && message.sentAt <= clearedAt) return res.status(404).json({ error: 'Message not found.' });
+    res.json(message.toObject ? message.toObject() : message);
+  } catch (e) { next(e); }
+};
+
 exports.sendMessage = async (req, res, next) => {
   try {
     const conversation = await accessibleConversation(req.params.conversationId, req.userId, false);

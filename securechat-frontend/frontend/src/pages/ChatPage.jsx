@@ -8,7 +8,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { useE2EE } from '../context/E2EEContext';
 import Avatar from '../components/Avatar';
 import EmojiMenu from '../components/EmojiMenu';
-import { isNativePlatform, onNotificationTap, showMessageNotification } from '../utils/notifications';
+import { isNativePlatform, onNotificationTap, onNotificationReply, showMessageNotification } from '../utils/notifications';
 import { initializePushNotifications } from '../utils/push';
 
 const MODES = [['off', 'Off'], ['1h', '1 hour'], ['1d', '1 day'], ['7d', '7 days']];
@@ -420,13 +420,51 @@ export default function ChatPage() {
       const hydrated = await hydrateOne(message);
       body = `${senderName}: ${contentPreview(hydrated?._content).slice(0, 80)}`;
     }
-    await showMessageNotification({ title, body, conversationId: idOf(message.conversationId) });
+    await showMessageNotification({ title, body, conversationId: idOf(message.conversationId), withReply: true });
   }, [hydrateOne]);
 
   useEffect(() => onNotificationTap((conversationId) => {
     setActiveId(conversationId);
     window.focus();
   }), []);
+
+  // FCM push arrived while the app is alive: decrypt it (the message is never
+  // sent in cleartext) and show a rich, reply-able local notification.
+  useEffect(() => {
+    if (!isNativePlatform) return undefined;
+    const onPushReceived = async (event) => {
+      const { conversationId, messageId, title = 'SecureChat', body = 'New encrypted message received.', senderName: fallbackSender = '', conversationType = 'direct' } = event?.detail || {};
+      if (!conversationId) return;
+      const current = settingsRef.current;
+      if (!current?.notificationsEnabled) return;
+      const conversation = conversationsRef.current.find((c) => idOf(c) === idOf(conversationId));
+      const isOpen = conversation && idOf(conversation) === idOf(activeIdRef.current);
+      if (isOpen && document.visibilityState === 'visible') return;
+      let senderName = fallbackSender;
+      let msgBody = body;
+      if (messageId) {
+        try {
+          const { data: rawMessage } = await api.get(`/messages/${messageId}`);
+          const hydrated = await hydrateOne(rawMessage);
+          if (current.notificationPrivacyLevel !== 'detailed') {
+            const sender = conversation?.participantIds?.find((p) => idOf(p) === idOf(rawMessage.senderId));
+            senderName = sender?.name || sender?.username || fallbackSender || (conversationType === 'group' ? 'A group member' : 'Someone');
+            msgBody = `${senderName} sent a secure message.`;
+          } else {
+            const sender = conversation?.participantIds?.find((p) => idOf(p) === idOf(rawMessage.senderId));
+            senderName = sender?.name || sender?.username || fallbackSender || (conversationType === 'group' ? 'A group member' : 'Someone');
+            msgBody = `${senderName}: ${contentPreview(hydrated?._content).slice(0, 80)}`;
+          }
+        } catch { /* keep the generic push text */ }
+      } else if (current.notificationPrivacyLevel === 'detailed') {
+        msgBody = body;
+      }
+      await showMessageNotification({ title: conversation?.type === 'group' ? conversation.name || title : title, body: msgBody, conversationId, withReply: true });
+    };
+    const handler = (e) => onPushReceived(e).catch(() => {});
+    window.addEventListener('securechat:push-received', handler);
+    return () => window.removeEventListener('securechat:push-received', handler);
+  }, [hydrateOne]);
 
   useEffect(() => {
     if (!isNativePlatform) return undefined;
@@ -608,6 +646,41 @@ export default function ChatPage() {
     if (!socket?.connected) return reject(new Error('Live connection is offline. Reconnect before sending.'));
     socket.emit('message:send', { conversationId, ...envelope }, (result) => result?.ok ? resolve(result.message) : reject(new Error(result?.error || 'Message could not be sent.')));
   }), [socket]);
+
+  // Sends a reply typed directly into the notification drawer.
+  const replyFromNotification = useCallback(async ({ conversationId, text }) => {
+    const targetId = idOf(conversationId); const replyText = String(text || '').trim();
+    if (!targetId || !replyText) return;
+    if (cryptoStatusRef.current !== 'ready') { flash('Encrypted messaging is still initializing — open the app to reply.'); return; }
+    let sentRaw = null; let sendError = null;
+    try {
+      const envelope = await encryptForConversation(targetId, { kind: 'text', text: replyText });
+      if (!socket?.connected) {
+        const existingSocket = socket;
+        if (existingSocket?.connect && !existingSocket.connected) { try { existingSocket.connect(); } catch { /* ignore */ } }
+        const deadline = Date.now() + 2500;
+        await new Promise((resolve) => {
+          const timer = window.setTimeout(() => { existingSocket?.off('connect', onConnect); resolve(); }, 2500);
+          const onConnect = () => { window.clearTimeout(timer); existingSocket?.off('connect', onConnect); resolve(); };
+          existingSocket?.on('connect', onConnect);
+        });
+      }
+      sentRaw = await emitMessage(targetId, envelope);
+    } catch (e) { sendError = e; }
+    setActiveId(targetId);
+    window.focus();
+    if (sentRaw) {
+      const hydrated = await hydrateOne(sentRaw);
+      setMessages((prev) => prev.some((m) => idOf(m) === idOf(hydrated)) ? prev : [...prev, hydrated]);
+      if (isNativePlatform) await showMessageNotification({ title: 'SecureChat', body: 'Reply sent.', conversationId: targetId, withReply: false }).catch(() => {});
+    } else {
+      const reason = sendError?.message || 'Live connection is offline.';
+      flash(reason);
+      if (isNativePlatform) await showMessageNotification({ title: 'SecureChat', body: `Reply could not be sent (${reason}). Open the app and try again.`, conversationId: targetId, withReply: false }).catch(() => {});
+    }
+  }, [cryptoStatusRef, encryptForConversation, emitMessage, hydrateOne, flash, socket]);
+
+  useEffect(() => onNotificationReply((payload) => replyFromNotification(payload).catch(() => {})), [replyFromNotification]);
 
   const send = async (event) => {
     event.preventDefault(); setError('');

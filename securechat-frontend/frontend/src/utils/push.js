@@ -1,5 +1,5 @@
 import api from '../api/client';
-import { isNativePlatform, showMessageNotification } from './notifications';
+import { isNativePlatform } from './notifications';
 
 let pushReady = false;
 let _pushListener = null;
@@ -22,9 +22,20 @@ async function handleForegroundPush(notification) {
   const conversationId = String(notification?.data?.conversationId || '');
   const shouldSock = window.__securechatActiveConversationRef?.getCurrent?.() === conversationId;
   if (shouldSock) return;
-  const title = String(notification.title || notification?.data?.title || 'SecureChat');
-  const body = String(notification.body || notification?.data?.body || 'New encrypted message received.');
-  if (conversationId) await showMessageNotification({ title, body, conversationId });
+  // Decryption is only possible in the app process (Web Crypto + IndexedDB).
+  // Hand the received push to the active screen so it can decrypt and render a
+  // rich, reply-able local notification. Fall back to a generic one otherwise.
+  window.dispatchEvent(new CustomEvent('securechat:push-received', {
+    detail: {
+      conversationId,
+      messageId: String(notification?.data?.messageId || ''),
+      senderId: String(notification?.data?.senderId || ''),
+      senderName: String(notification?.data?.senderName || ''),
+      conversationType: String(notification?.data?.conversationType || 'direct'),
+      title: String(notification?.title || notification?.data?.title || 'SecureChat'),
+      body: String(notification?.body || notification?.data?.body || 'New encrypted message received.'),
+    },
+  }));
 }
 
 export async function initializePushNotifications() {
