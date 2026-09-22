@@ -120,4 +120,49 @@ async function senderNameFor(userId) {
   return user.name || user.username || 'Someone';
 }
 
-module.exports = { pushMessage, senderNameFor, initApp };
+// Broadcasts an app-wide announcement to every registered device. This is a
+// system-level notification (a data message carries the destination URL), so
+// unlike pushMessage it deliberately ignores per-message privacy levels.
+async function pushAnnouncement({ title, body, url }) {
+  if (!initApp()) return 0;
+  const messaging = getMessaging(_app);
+  try {
+    const tokens = await PushToken.find().select('token').lean();
+    if (!tokens.length) return 0;
+    const messages = tokens.map((row) => ({
+      token: row.token,
+      notification: { title, body },
+      android: {
+        priority: 'high',
+        notification: { channelId: 'messages', title, body },
+      },
+      data: { kind: 'announcement', url: String(url || ''), title, body },
+    }));
+    let sent = 0;
+    const chunk = 500;
+    for (let i = 0; i < messages.length; i += chunk) {
+      const batch = messages.slice(i, i + chunk);
+      const result = await messaging.sendEach(batch);
+      const dead = [];
+      for (const r of result.responses) {
+        if (r.success) { sent += 1; continue; }
+        const code = r.error?.errorInfo?.code || r.error?.code || 'UNKNOWN';
+        const token = batch[result.responses.indexOf(r)].token;
+        if (['UNREGISTERED', 'NOT_FOUND', 'SENDER_ID_MISMATCH', 'INVALID_ARGUMENT'].includes(code)) {
+          dead.push(token);
+        }
+        console.error(`[push] announce FCM ${code} for token ${String(token).slice(0, 12)}…`);
+      }
+      if (dead.length) {
+        await PushToken.deleteMany({ token: { $in: dead } });
+        console.error(`[push] ${dead.length} dead token(s) removed.`);
+      }
+    }
+    return sent;
+  } catch (err) {
+    console.error('[push] Error sending announcement:', err.message);
+    return 0;
+  }
+}
+
+module.exports = { pushMessage, pushAnnouncement, senderNameFor, initApp };

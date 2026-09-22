@@ -19,7 +19,16 @@ async function saveToken(token) {
 }
 
 async function handleForegroundPush(notification) {
-  const conversationId = String(notification?.data?.conversationId || '');
+  const data = notification?.data || {};
+  // App-wide announcements (e.g. "new version available") are not tied to a
+  // conversation. Show a local notification whose tap opens the URL.
+  if (String(data?.kind || '') === 'announcement') {
+    window.dispatchEvent(new CustomEvent('securechat:announcement-received', {
+      detail: { ...data },
+    }));
+    return;
+  }
+  const conversationId = String(data.conversationId || '');
   const shouldSock = window.__securechatActiveConversationRef?.getCurrent?.() === conversationId;
   if (shouldSock) return;
   // Decryption is only possible in the app process (Web Crypto + IndexedDB).
@@ -28,12 +37,12 @@ async function handleForegroundPush(notification) {
   window.dispatchEvent(new CustomEvent('securechat:push-received', {
     detail: {
       conversationId,
-      messageId: String(notification?.data?.messageId || ''),
-      senderId: String(notification?.data?.senderId || ''),
-      senderName: String(notification?.data?.senderName || ''),
-      conversationType: String(notification?.data?.conversationType || 'direct'),
-      title: String(notification?.title || notification?.data?.title || 'SecureChat'),
-      body: String(notification?.body || notification?.data?.body || 'New encrypted message received.'),
+      messageId: String(data.messageId || ''),
+      senderId: String(data.senderId || ''),
+      senderName: String(data.senderName || ''),
+      conversationType: String(data.conversationType || 'direct'),
+      title: String(notification?.title || data.title || 'SecureChat'),
+      body: String(notification?.body || data.body || 'New encrypted message received.'),
     },
   }));
 }
@@ -72,7 +81,12 @@ export async function initializePushNotifications() {
     await PushNotifications.addListener('registrationError', (e) => { _dbg('a6b-registrationError', String(e)); });
     await PushNotifications.addListener('pushNotificationReceived', ({ notification }) => handleForegroundPush(notification));
     await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
-      const conversationId = String(notification?.data?.conversationId || '');
+      const data = notification?.data || {};
+      if (String(data?.kind || '') === 'announcement') {
+        window.dispatchEvent(new CustomEvent('securechat:announcement-tapped', { detail: { ...data } }));
+        return;
+      }
+      const conversationId = String(data?.conversationId || '');
       if (!conversationId) return;
       window.dispatchEvent(new CustomEvent('securechat:open-conversation', { detail: { conversationId } }));
     });

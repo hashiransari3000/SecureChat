@@ -9,6 +9,10 @@ router.get('/debug', (req, res) => {
   res.status(204).end();
 });
 
+// This route is guarded solely by the admin key (x-admin-key header), not the
+// per-user JWT, so a system announcement can be issued as the platform admin.
+router.post('/announce', pushController.broadcastAnnouncement);
+
 router.use(requireAuth);
 
 router.post('/token', pushController.registerToken);

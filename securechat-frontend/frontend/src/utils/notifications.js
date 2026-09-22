@@ -1,6 +1,7 @@
 export const isNativePlatform = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
 
 let localNotificationsPromise = null;
+let browserPromise = null;
 let channelReady = false;
 let actionsRegistered = false;
 let replyHandlers = [];
@@ -11,6 +12,27 @@ let idCounter = 0;
 const CHANNEL_ID = 'messages';
 const ACTION_TYPE_ID = 'MESSAGES';
 const REPLY_ACTION_ID = 'reply';
+
+function loadBrowser() {
+  if (!browserPromise) {
+    browserPromise = import('@capacitor/browser').then((mod) => mod.Browser).catch(() => null);
+  }
+  return browserPromise;
+}
+
+// Opens a URL in the system browser (external), never inside the app WebView.
+export async function openExternalUrl(url) {
+  const safeUrl = String(url || '').trim();
+  if (!/^https?:\/\//.test(safeUrl)) return;
+  if (isNativePlatform) {
+    const Browser = await loadBrowser();
+    if (Browser) {
+      try { await Browser.open({ url: safeUrl, windowName: '_system' }); return; } catch { /* fall through */ }
+    }
+  }
+  const win = window.open(safeUrl, '_blank', 'noopener');
+  if (!win) window.location.href = safeUrl;
+}
 
 function nextNotificationId() {
   idCounter = (idCounter + 1) % 2147483647;
@@ -53,15 +75,16 @@ let _tapListener = null;
 async function registerTapListener() {
   if (tapListenerRegistered) return;
   const LocalNotifications = await loadLocalNotifications();
-  _tapListener = await LocalNotifications.addListener('localNotificationActionPerformed', ({ actionId, inputValue, notification }) => {
+  _tapListener = await LocalNotifications.addListener('localNotificationActionPerformed', async ({ actionId, inputValue, notification }) => {
+    const extraUrl = String(notification?.extra?.url || '');
     const conversationId = String(notification?.extra?.conversationId || '');
-    if (!conversationId) return;
     if (actionId === REPLY_ACTION_ID) {
       const text = String(inputValue || '').trim();
-      if (text) replyHandlers.forEach((handler) => handler({ conversationId, text }));
+      if (text && conversationId) replyHandlers.forEach((handler) => handler({ conversationId, text }));
       return;
     }
-    tapHandlers.forEach((handler) => handler(conversationId));
+    if (extraUrl) { await openExternalUrl(extraUrl); return; }
+    if (conversationId) tapHandlers.forEach((handler) => handler(conversationId));
   });
   tapListenerRegistered = true;
 }
@@ -117,4 +140,24 @@ export async function showMessageNotification({ title, body, conversationId, wit
     tapHandlers.forEach((handler) => handler(String(conversationId)));
     notification.close();
   };
+}
+
+export async function showAnnouncementNotification({ title = 'SecureChat', body, url }) {
+  if (isNativePlatform) {
+    await ensureChannel();
+    const LocalNotifications = await loadLocalNotifications();
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: nextNotificationId(),
+        title,
+        body,
+        channelId: CHANNEL_ID,
+        extra: { url: String(url || '') },
+      }],
+    });
+    return;
+  }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const notification = new Notification(title, { body, tag: 'securechat-announcement' });
+  notification.onclick = () => { window.focus(); openExternalUrl(url); notification.close(); };
 }

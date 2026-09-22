@@ -9,6 +9,7 @@ import PrivacyTour from './PrivacyTour';
 import AppLock from './AppLock';
 import Avatar from './Avatar';
 import CallScreen from './CallScreen';
+import { openExternalUrl, showAnnouncementNotification } from '../utils/notifications';
 import { ArrowLeft, LockKeyhole, MessageCircle, MoonStar, MoreHorizontal, Settings, ShieldCheck } from 'lucide-react';
 
 function SecureShell({ user, logout }) {
@@ -40,6 +41,27 @@ function SecureShell({ user, logout }) {
     };
     window.addEventListener('securechat:toast', onToast);
     return () => window.removeEventListener('securechat:toast', onToast);
+  }, []);
+
+  // App-wide announcements: show a local notification while the app is alive,
+  // and open the destination URL when an arriving announcement is tapped.
+  useEffect(() => {
+    const onAnnouncementReceived = ({ detail }) => {
+      showAnnouncementNotification({
+        title: detail?.title || 'SecureChat',
+        body: detail?.body || 'Tap to view.',
+        url: detail?.url || '',
+      }).catch(() => {});
+    };
+    const onAnnouncementTapped = ({ detail }) => {
+      if (detail?.url) openExternalUrl(detail.url).catch(() => {});
+    };
+    window.addEventListener('securechat:announcement-received', onAnnouncementReceived);
+    window.addEventListener('securechat:announcement-tapped', onAnnouncementTapped);
+    return () => {
+      window.removeEventListener('securechat:announcement-received', onAnnouncementReceived);
+      window.removeEventListener('securechat:announcement-tapped', onAnnouncementTapped);
+    };
   }, []);
   useEffect(() => {
     if (!authNotice) return undefined;
