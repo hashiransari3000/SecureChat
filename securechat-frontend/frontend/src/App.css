@@ -1180,3 +1180,42 @@ img { max-width: 100%; height: auto; }
 
 :root[data-theme="dark"] .reaction-chip { background: color-mix(in srgb, var(--surface-soft) 40%, var(--surface)); }
 :root[data-theme="dark"] .reaction-chip.mine { color: #8ec2ff; }
+
+/* ---- Calls / WebRTC ---- */
+.call-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center; gap: 18px; flex-direction: column;
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 55%),
+    var(--bg);
+  animation: fade-in var(--motion) ease both;
+  color: var(--text);
+}
+.call-audio-stage, .call-video-stage { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+.call-audio-stage { padding: 0 24px; }
+.call-avatar-frame { width: 128px; height: 128px; border-radius: 50%; border: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--surface-soft); }
+.call-avatar-frame .avatar { width: 100% !important; height: 100% !important; font-size: 44px; }
+.call-pulse { animation: call-pulse 1.8s ease-out infinite; }
+@keyframes call-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent); } 70% { box-shadow: 0 0 0 26px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.call-name { font-size: 1.35rem; font-weight: 700; letter-spacing: .2px; }
+.call-status { font-size: .9rem; opacity: .72; }
+.call-ended-reason { font-size: .85rem; opacity: .8; }
+.call-video-stage { position: relative; height: 100%; }
+.call-remote-video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+.call-local-video { position: absolute; top: 16px; right: 16px; width: 118px; height: 168px; object-fit: cover; border-radius: 12px; border: 2px solid var(--surface); box-shadow: var(--shadow-float); background: #111; }
+.call-video-hidden-placeholder { position: absolute; top: 16px; right: 16px; width: 118px; height: 168px; border-radius: 12px; border: 2px solid var(--surface); background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #fff; font-size: .72rem; }
+.call-video-hud { position: absolute; left: 0; right: 0; bottom: 84px; text-align: center; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.call-video-hud strong { display: block; font-size: 1.1rem; }
+.call-video-hud span { font-size: .8rem; opacity: .9; }
+.call-controls { display: flex; align-items: center; gap: 18px; padding-bottom: env(safe-area-inset-bottom); }
+.call-control { width: 60px; height: 60px; border-radius: 50%; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--surface-soft); color: var(--text); box-shadow: var(--shadow); transition: transform var(--motion); }
+.call-control:hover { transform: translateY(-2px); }
+.call-control svg { width: 24px; height: 24px; }
+.call-answer { background: #2ecc71; color: #fff; }
+.call-muted { background: #f1c40f; color: #111; }
+.call-decline { background: var(--danger); color: #fff; }
+@media (max-width: 620px) {
+  .call-local-video { width: 88px; height: 124px; right: 8px; top: 8px; }
+  .call-video-hidden-placeholder { width: 88px; height: 124px; right: 8px; top: 8px; }
+  .call-control { width: 54px; height: 54px; }
+}

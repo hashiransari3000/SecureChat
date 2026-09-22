@@ -2,9 +2,14 @@ const { verifyToken } = require('../utils/jwt');
 const PrivacySettings = require('../models/PrivacySettings');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
+const User = require('../models/User');
 const { createEncryptedMessage, recomputeAggregateReceipts } = require('../controllers/messageController');
 const { includesId } = require('../utils/privacy');
 const push = require('../utils/push');
+
+// In-memory map of live calls keyed by conversationId. WebRTC media flows
+// peer-to-peer; the server only relays SDP/ICE signaling and call state.
+const activeCalls = new Map();
 
 // One account may have several authenticated tabs/devices. Presence is online
 // while at least one socket is connected. No last-seen history is stored.
@@ -42,6 +47,36 @@ async function pairAllowsMessaging(userA, userB) {
 async function acceptedDirectPeers(userId) {
   const chats = await Conversation.find({ type: 'direct', participantIds: userId, status: 'accepted' }).select('participantIds');
   return [...new Set(chats.map((chat) => chat.participantIds.find((x) => String(x) !== String(userId))).filter(Boolean).map(String))];
+}
+
+function directPeer(conversation, userId) {
+  return conversation?.participantIds?.find((x) => String(x) !== String(userId));
+}
+
+function activeCallFor(conversationId) {
+  return activeCalls.get(String(conversationId));
+}
+
+function userInCall(userId) {
+  for (const call of activeCalls.values()) {
+    if (String(call.callerId) === String(userId) || String(call.calleeId) === String(userId)) return call;
+  }
+  return null;
+}
+
+// Ends a tracked call and notifies the other participant over their live socket.
+function tearDownCall(io, conversationId, reason) {
+  const call = activeCallFor(conversationId);
+  if (!call) return;
+  activeCalls.delete(String(conversationId));
+  const { callerId, calleeId } = call;
+  io.to(`user:${callerId}`).emit('call:ended', { conversationId: String(conversationId), reason });
+  io.to(`user:${calleeId}`).emit('call:ended', { conversationId: String(conversationId), reason });
+}
+
+async function callPeerDisplay(userId) {
+  const user = await User.findById(userId).select('name username avatarUrl avatarPlaceholder').lean();
+  return { id: String(userId), name: user?.name || user?.username || 'SecureChat user', username: user?.username || '', avatarUrl: user?.avatarUrl || '' };
 }
 
 async function notifyPresence(io, userId, state) {
@@ -259,9 +294,84 @@ module.exports = function initSockets(io) {
     socket.on('typing:start', ({ conversationId } = {}) => relayTyping('typing:start', conversationId));
     socket.on('typing:stop', ({ conversationId } = {}) => relayTyping('typing:stop', conversationId));
 
+    // ---- Calls / WebRTC signaling (1:1 direct chats only) ----
+    //
+    // The callee gets call:incoming ONLY when they are online; nobody is
+    // woken up with the notification tray for calls (message FCM push exists,
+    // a call missed over FCM has no value). Signaling is relayed as-is.
+
+    socket.on('call:invite', async ({ conversationId, kind = 'audio' } = {}, ack) => {
+      try {
+        const conversation = await acceptedConversation(conversationId, userId);
+        if (!conversation || conversation.type !== 'direct') return ack?.({ ok: false, error: 'Calls are only available in 1:1 accepted conversations.' });
+        if (activeCallFor(conversationId)) return ack?.({ ok: false, error: 'A call is already active in this conversation.' });
+        if (userInCall(userId)) return ack?.({ ok: false, error: 'You are already in another call.' });
+        const peerId = directPeer(conversation, userId);
+        if (!peerId || !await pairAllowsMessaging(userId, String(peerId))) return ack?.({ ok: false, error: 'Calls are unavailable for this conversation.' });
+        if (!isOnline(String(peerId))) return ack?.({ ok: false, error: 'offline' });
+        if (userInCall(peerId)) return ack?.({ ok: false, error: 'busy' });
+        activeCalls.set(String(conversationId), { conversationId: String(conversationId), callerId: String(userId), calleeId: String(peerId), kind: kind === 'video' ? 'video' : 'audio', startedAt: Date.now() });
+        const caller = await callPeerDisplay(userId);
+        io.to(`user:${peerId}`).emit('call:incoming', { conversationId: String(conversationId), caller, kind: kind === 'video' ? 'video' : 'audio' });
+        ack?.({ ok: true });
+      } catch { ack?.({ ok: false, error: 'Call could not be started.' }); }
+    });
+
+    socket.on('call:accept', async ({ conversationId } = {}, ack) => {
+      try {
+        const call = activeCallFor(conversationId);
+        if (!call || String(call.calleeId) !== String(userId)) return ack?.({ ok: false });
+        io.to(`user:${call.callerId}`).emit('call:accepted', { conversationId: String(conversationId), kind: call.kind });
+        ack?.({ ok: true });
+      } catch { ack?.({ ok: false }); }
+    });
+
+    socket.on('call:reject', async ({ conversationId, reason = 'declined' } = {}, ack) => {
+      try {
+        const call = activeCallFor(conversationId);
+        if (!call || (String(call.callerId) !== String(userId) && String(call.calleeId) !== String(userId))) return ack?.({ ok: false });
+        activeCalls.delete(String(conversationId));
+        const otherId = String(call.callerId) === String(userId) ? call.calleeId : call.callerId;
+        io.to(`user:${otherId}`).emit('call:rejected', { conversationId: String(conversationId), reason });
+        ack?.({ ok: true });
+      } catch { ack?.({ ok: false }); }
+    });
+
+    socket.on('call:cancel', async ({ conversationId } = {}, ack) => {
+      try {
+        const call = activeCallFor(conversationId);
+        if (!call || String(call.callerId) !== String(userId)) return ack?.({ ok: false });
+        activeCalls.delete(String(conversationId));
+        io.to(`user:${call.calleeId}`).emit('call:cancelled', { conversationId: String(conversationId) });
+        ack?.({ ok: true });
+      } catch { ack?.({ ok: false }); }
+    });
+
+    socket.on('call:end', ({ conversationId } = {}) => tearDownCall(io, conversationId, 'ended'));
+
+    // Relays SDP offers/answers and ICE candidates between the two peers.
+    socket.on('call:signal', async ({ conversationId, to, signal } = {}, ack) => {
+      try {
+        const call = activeCallFor(conversationId);
+        if (!call || (String(call.callerId) !== String(userId) && String(call.calleeId) !== String(userId))) return ack?.({ ok: false });
+        const otherId = String(call.callerId) === String(userId) ? call.calleeId : call.callerId;
+        if (String(to) !== String(otherId)) return ack?.({ ok: false });
+        io.to(`user:${otherId}`).emit('call:signal', { conversationId: String(conversationId), from: String(userId), signal });
+        ack?.({ ok: true });
+      } catch { ack?.({ ok: false }); }
+    });
+
     socket.on('disconnect', async () => {
       const becameOffline = removeSocket(userId, socket.id);
-      if (becameOffline) await notifyPresence(io, userId, 'offline');
+      if (!becameOffline) return;
+      await notifyPresence(io, userId, 'offline');
+      // End any call the disconnecting user was in (no socket remains, so it
+      // is effectively a hang-up).
+      for (const [conversationId, call] of activeCalls) {
+        if (String(call.callerId) === String(userId) || String(call.calleeId) === String(userId)) {
+          tearDownCall(io, conversationId, 'hangup');
+        }
+      }
     });
   });
 };

@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, FileText, Info, KeyRound, LockKeyhole, MessageCirclePlus, Mic, Monitor, MoreHorizontal, Paperclip, Play, Search, Send, ShieldCheck, Smile, Timer, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Info, KeyRound, LockKeyhole, MessageCirclePlus, Mic, Monitor, MoreHorizontal, Paperclip, Phone, Play, Search, Send, ShieldCheck, Smile, Timer, Trash2, Video } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/useSocket';
@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar';
 import EmojiMenu from '../components/EmojiMenu';
 import { isNativePlatform, onNotificationTap, onNotificationReply, showMessageNotification } from '../utils/notifications';
 import { initializePushNotifications } from '../utils/push';
+import { useCall } from '../context/CallContext';
 
 const MODES = [['off', 'Off'], ['1h', '1 hour'], ['1d', '1 day'], ['7d', '7 days']];
 const USERNAME_PREFIX = /^[a-z0-9_]{2,30}$/i;
@@ -238,6 +239,7 @@ export default function ChatPage() {
   const { user } = useAuth();
   const myId = idOf(user);
   const socket = useSocket();
+  const { startCall } = useCall();
   const { settings } = usePrivacy();
   const {
     status: cryptoStatus, error: cryptoError, identity,
@@ -658,7 +660,6 @@ export default function ChatPage() {
       if (!socket?.connected) {
         const existingSocket = socket;
         if (existingSocket?.connect && !existingSocket.connected) { try { existingSocket.connect(); } catch { /* ignore */ } }
-        const deadline = Date.now() + 2500;
         await new Promise((resolve) => {
           const timer = window.setTimeout(() => { existingSocket?.off('connect', onConnect); resolve(); }, 2500);
           const onConnect = () => { window.clearTimeout(timer); existingSocket?.off('connect', onConnect); resolve(); };
@@ -898,6 +899,10 @@ export default function ChatPage() {
             <strong>{chatTitle(active, myId)}</strong><span className={`presence-text ${presence}`}>{active.type === 'direct' && presence === 'online' && !typingUsers.length && <span className="presence-dot" />} {presenceText}</span>
           </button>
           <div className="chat-header-actions">
+            {active.type === 'direct' && other && <>
+              <button className="icon-button" type="button" title="Start an audio call" aria-label={`Call ${other?.name || 'this contact'}`} onClick={() => startCall({ conversationId: activeId, peer: other, kind: 'audio' })} disabled={!active.messagingAvailable}><Phone aria-hidden="true" /></button>
+              <button className="icon-button" type="button" title="Start a video call" aria-label={`Video call ${other?.name || 'this contact'}`} onClick={() => startCall({ conversationId: activeId, peer: other, kind: 'video' })} disabled={!active.messagingAvailable}><Video aria-hidden="true" /></button>
+            </>}
             <button className="encryption-pill" type="button" onClick={() => setShowEncryptionInfo(true)} title="View encryption details"><LockKeyhole aria-hidden="true" /><span>End-to-end encrypted</span></button>
             <button className="icon-button" type="button" title="Search this chat locally" aria-label="Search this chat locally" onClick={() => setShowChatSearch((v) => !v)}><Search aria-hidden="true" /></button>
             <div className="overflow-menu chat-overflow">
