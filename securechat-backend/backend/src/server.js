@@ -16,6 +16,7 @@ const dataRoutes = require('./routes/dataRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
 const pushRoutes = require('./routes/pushRoutes');
+const appRoutes = require('./routes/appRoutes');
 const { cleanupExpired } = require('./controllers/attachmentController');
 
 const app = express();
@@ -67,6 +68,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'SecureChat' 
 app.use('/auth', authRoutes);
 app.use('/privacy', privacyRoutes);
 app.use('/push', pushRoutes);
+app.use('/app', appRoutes);
 app.use('/', chatRoutes);
 app.use('/users', userRoutes);
 app.use('/data', dataRoutes);

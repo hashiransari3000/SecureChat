@@ -123,7 +123,7 @@ async function senderNameFor(userId) {
 // Broadcasts an app-wide announcement to every registered device. This is a
 // system-level notification (a data message carries the destination URL), so
 // unlike pushMessage it deliberately ignores per-message privacy levels.
-async function pushAnnouncement({ title, body, url }) {
+async function pushAnnouncement({ title, body, url, apkUrl }) {
   if (!initApp()) return 0;
   const messaging = getMessaging(_app);
   try {
@@ -136,7 +136,7 @@ async function pushAnnouncement({ title, body, url }) {
         priority: 'high',
         notification: { channelId: 'messages', title, body },
       },
-      data: { kind: 'announcement', url: String(url || ''), title, body },
+      data: { kind: 'announcement', url: String(url || ''), apkUrl: String(apkUrl || ''), title, body },
     }));
     let sent = 0;
     const chunk = 500;

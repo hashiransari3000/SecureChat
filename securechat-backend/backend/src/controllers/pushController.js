@@ -45,11 +45,14 @@ async function broadcastAnnouncement(req, res) {
   const title = String(req.body?.title || 'SecureChat').trim().slice(0, 80) || 'SecureChat';
   const body = String(req.body?.body || '').trim().slice(0, 180);
   const url = String(req.body?.url || '').trim();
+  const apkUrl = String(req.body?.apkUrl || '').trim();
   if (!body) return res.status(400).json({ error: 'A notification body is required.' });
-  if (!/^https:\/\/[^ ]+$/.test(url)) return res.status(400).json({ error: 'A valid https URL is required.' });
-  if (!/^https:\/\/github\.com/i.test(url)) return res.status(400).json({ error: 'Only GitHub URLs are allowed for downloads.' });
+  if (apkUrl && !/^https:\/\/[^ ]+\.apk$/i.test(apkUrl)) return res.status(400).json({ error: 'apkUrl must be an https URL ending in .apk.' });
+  if (!url && !apkUrl) return res.status(400).json({ error: 'A destination URL is required.' });
+  if (url && !/^https:\/\/[^ ]+$/.test(url)) return res.status(400).json({ error: 'A valid https URL is required.' });
+  if (url && !/^https:\/\/github\.com/i.test(url)) return res.status(400).json({ error: 'Only GitHub URLs are allowed for downloads.' });
   try {
-    const sent = await pushAnnouncement({ title, body, url });
+    const sent = await pushAnnouncement({ title, body, url, apkUrl });
     res.json({ ok: true, sent, total: sent });
   } catch (err) {
     console.error('[push] broadcast failed:', err.message);
