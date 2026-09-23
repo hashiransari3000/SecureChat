@@ -43,18 +43,28 @@ function SecureShell({ user, logout }) {
     return () => window.removeEventListener('securechat:toast', onToast);
   }, []);
 
+  // Auto-check for a new version on app start so users are prompted to update.
+  useEffect(() => {
+    import('../utils/updater').then(({ checkForAppUpdate }) => checkForAppUpdate()).catch(() => {});
+  }, []);
+
   // App-wide announcements: show a local notification while the app is alive,
-  // and open the destination URL when an arriving announcement is tapped.
+  // and open the destination URL (or install the new APK) when tapped.
   useEffect(() => {
     const onAnnouncementReceived = ({ detail }) => {
       showAnnouncementNotification({
         title: detail?.title || 'SecureChat',
         body: detail?.body || 'Tap to view.',
         url: detail?.url || '',
+        apkUrl: detail?.apkUrl || '',
       }).catch(() => {});
     };
     const onAnnouncementTapped = ({ detail }) => {
-      if (detail?.url) openExternalUrl(detail.url).catch(() => {});
+      if (detail?.apkUrl) {
+        import('../utils/updater').then(({ installAppUpdate }) => installAppUpdate(detail.apkUrl)).catch(() => {});
+      } else if (detail?.url) {
+        openExternalUrl(detail.url).catch(() => {});
+      }
     };
     window.addEventListener('securechat:announcement-received', onAnnouncementReceived);
     window.addEventListener('securechat:announcement-tapped', onAnnouncementTapped);

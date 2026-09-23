@@ -1,5 +1,5 @@
 import api from '../api/client';
-import { isNativePlatform } from './notifications';
+import { ensureNotificationChannel, isNativePlatform } from './notifications';
 
 let pushReady = false;
 let _pushListener = null;
@@ -53,6 +53,8 @@ export async function initializePushNotifications() {
 
   try {
     _dbg('a1-checking-capacitor');
+
+    await ensureNotificationChannel().catch(() => {});
 
     const PushNotifications = window.Capacitor?.Plugins?.PushNotifications
       || window.Capacitor?.PushNotifications

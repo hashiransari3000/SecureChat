@@ -78,9 +78,15 @@ async function registerTapListener() {
   _tapListener = await LocalNotifications.addListener('localNotificationActionPerformed', async ({ actionId, inputValue, notification }) => {
     const extraUrl = String(notification?.extra?.url || '');
     const conversationId = String(notification?.extra?.conversationId || '');
+    const updateUrl = String(notification?.extra?.updateUrl || '');
     if (actionId === REPLY_ACTION_ID) {
       const text = String(inputValue || '').trim();
       if (text && conversationId) replyHandlers.forEach((handler) => handler({ conversationId, text }));
+      return;
+    }
+    if (updateUrl) {
+      const { installAppUpdate } = await import('./updater');
+      await installAppUpdate(updateUrl);
       return;
     }
     if (extraUrl) { await openExternalUrl(extraUrl); return; }
@@ -103,6 +109,10 @@ export function onNotificationReply(handler) {
 
 export function isNotificationSupported() {
   return isNativePlatform || ('Notification' in window);
+}
+
+export async function ensureNotificationChannel() {
+  if (isNativePlatform && !channelReady) await ensureChannel();
 }
 
 export async function requestNotificationPermission() {
@@ -142,7 +152,7 @@ export async function showMessageNotification({ title, body, conversationId, wit
   };
 }
 
-export async function showAnnouncementNotification({ title = 'SecureChat', body, url }) {
+export async function showUpdateNotification({ title = 'SecureChat update available', body, apkUrl, versionName }) {
   if (isNativePlatform) {
     await ensureChannel();
     const LocalNotifications = await loadLocalNotifications();
@@ -152,7 +162,24 @@ export async function showAnnouncementNotification({ title = 'SecureChat', body,
         title,
         body,
         channelId: CHANNEL_ID,
-        extra: { url: String(url || '') },
+        extra: { updateUrl: String(apkUrl || ''), versionName: String(versionName || '') },
+      }],
+    });
+    return;
+  }
+}
+
+export async function showAnnouncementNotification({ title = 'SecureChat', body, url, apkUrl }) {
+  if (isNativePlatform) {
+    await ensureChannel();
+    const LocalNotifications = await loadLocalNotifications();
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: nextNotificationId(),
+        title,
+        body,
+        channelId: CHANNEL_ID,
+        extra: { url: String(url || ''), apkUrl: String(apkUrl || '') },
       }],
     });
     return;
